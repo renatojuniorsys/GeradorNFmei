@@ -162,25 +162,52 @@ export const ModernInvoice: React.FC<Props> = ({ data, settings, refProp }) => {
         </div>
 
         {/* Rodapé */}
-        <footer className="mt-auto border-t-4 border-indigo-50 pt-10 flex justify-between items-center text-[10px] text-gray-300 font-black tracking-[0.2em] uppercase relative z-10">
-          <div className="flex items-center gap-4 bg-emerald-50 text-emerald-700 px-8 py-4 rounded-full border border-emerald-100">
-             <CheckCircle className="w-5 h-5" />
-             <span className="text-xs">Autenticidade Garantida</span>
-          </div>
-          <div className="flex items-center gap-8">
-             {settings?.qrCodeUrl ? (
-               <img src={settings.qrCodeUrl} alt="QR Validação" className="w-20 h-20 object-contain rounded-3xl bg-white p-2 shadow-sm border border-gray-100" />
-             ) : (
-               <div className="w-20 h-20 border-2 border-dashed border-gray-100 rounded-3xl flex items-center justify-center">
-                 <QrCode className="w-10 h-10 opacity-10" />
+        <footer className="mt-auto border-t-4 border-indigo-50 pt-10 flex flex-col gap-8 relative z-10">
+          <div className="flex justify-between items-center text-[10px] text-gray-300 font-black tracking-[0.2em] uppercase">
+            {/* Status de Autenticidade */}
+            <div className="flex items-center gap-4 bg-emerald-50 text-emerald-700 px-8 py-4 rounded-full border border-emerald-100">
+               <CheckCircle className="w-5 h-5" />
+               <span className="text-xs">Autenticidade Garantida</span>
+            </div>
+
+            {/* QR Code Prominente e Hash */}
+            <div className="flex items-center gap-8">
+               <div className="flex flex-col items-center gap-2">
+                 {settings?.qrCodeUrl ? (
+                   <div className="relative p-1.5 bg-white rounded-[1.5rem] shadow-xl border border-gray-100 group/qr">
+                     <img src={settings.qrCodeUrl} alt="QR Validação" className="w-24 h-24 object-contain rounded-2xl" />
+                     <div className="absolute -top-3 -right-3 bg-indigo-600 text-white text-[8px] px-3 py-1 rounded-full shadow-lg border border-indigo-400 animate-bounce">
+                       NOVO
+                     </div>
+                   </div>
+                 ) : (
+                   <div className="w-24 h-24 border-2 border-dashed border-gray-100 rounded-[1.5rem] flex items-center justify-center bg-gray-50/50">
+                     <QrCode className="w-10 h-10 opacity-10" />
+                   </div>
+                 )}
+                 <p className="text-[8px] font-black text-indigo-500 uppercase tracking-widest text-center mt-1">
+                   Escaneie para<br/>Validação ou Pagamento
+                 </p>
                </div>
-             )}
-             <div className="text-right">
-               <p className="mb-2 text-gray-300">Hash de Segurança SHA-256</p>
-               <p className="font-mono text-sm text-indigo-500 font-black tracking-normal">MEI-PRO-8293-F1A2</p>
-             </div>
+               
+               <div className="text-right flex flex-col justify-center">
+                 <p className="mb-2 text-gray-400 text-[9px]">Hash SHA-256 de Segurança</p>
+                 <p className="font-mono text-sm text-indigo-600 font-black tracking-normal bg-indigo-50 px-4 py-2 rounded-xl border border-indigo-100/50">
+                   MEI-PRO-{data.verificationCode?.substring(0, 4) || '8293'}-F1A2
+                 </p>
+               </div>
+            </div>
           </div>
-          <p className="italic font-bold lowercase tracking-normal opacity-40 max-w-[180px] leading-tight text-right">Documento visual gerado a partir do XML/PDF original via processamento inteligente</p>
+
+          {/* Nota Legal e Créditos */}
+          <div className="flex justify-between items-center border-t border-gray-50 pt-6">
+            <p className="italic font-bold text-gray-300 lowercase tracking-normal text-[9px] max-w-[400px]">
+              Este documento é uma representação visual inteligente dos dados contidos no arquivo fiscal original (XML/PDF) e possui fins informativos e de organização administrativa.
+            </p>
+            <p className="font-black text-gray-200 text-[10px] tracking-[0.5em] uppercase">
+              MEI Smart Doc &bull; v2.5
+            </p>
+          </div>
         </footer>
       </div>
     </div>
