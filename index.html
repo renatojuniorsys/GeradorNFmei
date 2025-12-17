@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>MEI Smart Doc</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+      
+      body {
+        font-family: 'Inter', sans-serif;
+        background-color: #f3f4f6;
+        overflow-x: hidden;
+      }
+
+      /* Print styles to ensure exact PDF generation looks */
+      @media print {
+        @page { 
+          margin: 0 !important; 
+          size: A4 portrait !important; 
+        }
+        
+        html, body { 
+          background-color: white !important;
+          -webkit-print-color-adjust: exact !important;
+          print-color-adjust: exact !important;
+          margin: 0 !important;
+          padding: 0 !important;
+          width: 210mm !important;
+          height: auto !important;
+          overflow: visible !important;
+        }
+
+        /* Hide all UI elements marked as no-print */
+        .no-print { display: none !important; }
+        
+        /* Show elements marked as print-only */
+        .print-only { display: block !important; }
+        
+        .page-break { page-break-before: always; }
+        
+        /* Reset shadows and borders for print */
+        .shadow-xl, .shadow-lg, .shadow-md, .shadow-sm { box-shadow: none !important; }
+        
+        /* Ensure inputs look like text */
+        input { border: none !important; background: transparent !important; }
+        
+        /* Force container to occupy full width */
+        #root { 
+          width: 100% !important; 
+          margin: 0 !important;
+          padding: 0 !important;
+        }
+
+        /* Prevent potential gray backgrounds in some browser print engines */
+        main {
+          background-color: white !important;
+          padding: 0 !important;
+        }
+      }
+
+      /* Animations */
+      @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+      .animate-fade-in {
+        animation: fadeIn 0.4s ease-out forwards;
+      }
+    </style>
+  <script type="importmap">
+{
+  "imports": {
+    "react": "https://esm.sh/react@^19.2.3",
+    "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
+    "react/": "https://esm.sh/react@^19.2.3/",
+    "@google/genai": "https://esm.sh/@google/genai@^1.34.0",
+    "lucide-react": "https://esm.sh/lucide-react@^0.561.0"
+  }
+}
+</script>
+</head>
+  <body>
+    <div id="root"></div>
+  </body>
+</html>
