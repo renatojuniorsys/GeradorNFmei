@@ -3,18 +3,18 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>MEI Smart Doc</title>
+    <title>MEI Smart Doc - Gerador de NF e Recibos</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-      @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+      @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
       
       body {
         font-family: 'Inter', sans-serif;
-        background-color: #f3f4f6;
+        background-color: #f8fafc;
         overflow-x: hidden;
       }
 
-      /* Print styles to ensure exact PDF generation looks */
+      /* Estilos para Impressão e PDF */
       @media print {
         @page { 
           margin: 0 !important; 
@@ -28,39 +28,36 @@
           margin: 0 !important;
           padding: 0 !important;
           width: 210mm !important;
-          height: auto !important;
+          height: 100% !important;
           overflow: visible !important;
         }
 
-        /* Hide all UI elements marked as no-print */
         .no-print { display: none !important; }
-        
-        /* Show elements marked as print-only */
         .print-only { display: block !important; }
         
-        .page-break { page-break-before: always; }
-        
-        /* Reset shadows and borders for print */
-        .shadow-xl, .shadow-lg, .shadow-md, .shadow-sm { box-shadow: none !important; }
-        
-        /* Ensure inputs look like text */
-        input { border: none !important; background: transparent !important; }
-        
-        /* Force container to occupy full width */
         #root { 
           width: 100% !important; 
           margin: 0 !important;
           padding: 0 !important;
         }
 
-        /* Prevent potential gray backgrounds in some browser print engines */
         main {
           background-color: white !important;
           padding: 0 !important;
+          margin: 0 !important;
+        }
+
+        /* Garante que o documento ocupe toda a largura */
+        .print-container {
+          width: 210mm !important;
+          max-width: none !important;
+          margin: 0 !important;
+          padding: 10mm !important;
+          box-shadow: none !important;
+          border: none !important;
         }
       }
 
-      /* Animations */
       @keyframes fadeIn {
         from { opacity: 0; transform: translateY(10px); }
         to { opacity: 1; transform: translateY(0); }
