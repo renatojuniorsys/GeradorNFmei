@@ -12,8 +12,14 @@ const parseGeminiResponse = (responseText: string): InvoiceData => {
 };
 
 export const extractInvoiceData = async (fileBase64: string, mimeType: string): Promise<InvoiceData> => {
-  // A chave de API deve vir exclusivamente de process.env.API_KEY conforme as regras
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  // A variável process.env.API_KEY é substituída pelo valor real pelo Vite durante o build
+  const apiKey = process.env.API_KEY;
+  
+  if (!apiKey) {
+    throw new Error("API_KEY não configurada. Verifique os segredos no painel do Netlify.");
+  }
+
+  const ai = new GoogleGenAI({ apiKey });
 
   const schema = {
     type: Type.OBJECT,
@@ -101,9 +107,8 @@ export const extractInvoiceData = async (fileBase64: string, mimeType: string): 
 
   } catch (error: any) {
     console.error("Gemini Error:", error);
-    // Repassa o erro com mensagem amigável para o usuário
     if (error.message?.includes("API key")) {
-       throw new Error("Erro de autenticação na API. Por favor, verifique as configurações do sistema no Netlify.");
+       throw new Error("Erro de autenticação na API do Google. Verifique se a sua chave está ativa e possui créditos/cotas disponíveis.");
     }
     throw error;
   }

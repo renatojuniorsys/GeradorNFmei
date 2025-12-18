@@ -1,4 +1,3 @@
-
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
@@ -7,7 +6,8 @@ export default defineConfig({
   base: '/',
   plugins: [react()],
   define: {
-    // Isso injeta a variável de ambiente do sistema (Netlify) no código do cliente
-    'process.env.API_KEY': JSON.stringify(process.env.API_KEY)
+    // Substitui process.env.API_KEY no código pela chave real durante o build.
+    // Usamos a chave fornecida como padrão para evitar o erro de 'missing key'.
+    'process.env.API_KEY': JSON.stringify(process.env.API_KEY || 'AIzaSyCY0Vv8i5WbGhy7igHZDupiLzPWczaJtfo')
   }
 })

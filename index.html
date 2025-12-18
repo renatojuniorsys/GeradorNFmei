@@ -6,7 +6,7 @@
     <title>MEI Smart Doc - Gerador de NF e Recibos</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
-      // Shim básico para evitar quebras se algum pacote tentar acessar process.env globalmente
+      // Shim essencial para compatibilidade com bibliotecas que esperam um ambiente Node.js
       window.process = window.process || { env: {} };
     </script>
     <style>
@@ -75,10 +75,10 @@
     "react-dom/client": "https://esm.sh/react-dom@19.0.0/client",
     "@google/genai": "https://esm.sh/@google/genai@1.34.0",
     "lucide-react": "https://esm.sh/lucide-react@0.460.0",
-    "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
-    "react/": "https://esm.sh/react@^19.2.3/",
+    "@vitejs/plugin-react": "https://esm.sh/@vitejs/plugin-react@^5.1.2",
     "vite": "https://esm.sh/vite@^7.3.0",
-    "@vitejs/plugin-react": "https://esm.sh/@vitejs/plugin-react@^5.1.2"
+    "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
+    "react/": "https://esm.sh/react@^19.2.3/"
   }
 }
 </script>
