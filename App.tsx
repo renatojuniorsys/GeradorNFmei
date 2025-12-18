@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { FileUpload } from './components/FileUpload';
 import { ModernInvoice } from './components/ModernInvoice';
 import { ReceiptPreview } from './components/ReceiptPreview';
@@ -6,7 +6,7 @@ import { LoginScreen } from './components/LoginScreen';
 import { SettingsScreen } from './components/SettingsScreen';
 import { InvoiceData, AppState, TabView, User, UserRole, AppSettings } from './types';
 import { extractInvoiceData } from './services/geminiService';
-import { Printer, FileCheck, FileSignature, AlertTriangle, LogOut, Shield, User as UserIcon, Settings as SettingsIcon } from 'lucide-react';
+import { Printer, FileCheck, FileSignature, AlertTriangle, LogOut, Shield, User as UserIcon, Settings as SettingsIcon, FileStack } from 'lucide-react';
 
 const App: React.FC = () => {
   const [users, setUsers] = useState<User[]>([
@@ -24,6 +24,44 @@ const App: React.FC = () => {
   const [data, setData] = useState<InvoiceData | null>(null);
   const [activeTab, setActiveTab] = useState<TabView>('INVOICE');
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [isPrintingAll, setIsPrintingAll] = useState(false);
+
+  // Sound Synthesis Logic
+  const playClickSound = () => {
+    try {
+      const AudioContextClass = (window as any).AudioContext || (window as any).webkitAudioContext;
+      const audioCtx = new AudioContextClass();
+      const oscillator = audioCtx.createOscillator();
+      const gainNode = audioCtx.createGain();
+
+      oscillator.type = 'sine';
+      oscillator.frequency.setValueAtTime(1200, audioCtx.currentTime);
+      oscillator.frequency.exponentialRampToValueAtTime(400, audioCtx.currentTime + 0.05);
+
+      gainNode.gain.setValueAtTime(0.05, audioCtx.currentTime);
+      gainNode.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.05);
+
+      oscillator.connect(gainNode);
+      gainNode.connect(audioCtx.destination);
+
+      oscillator.start();
+      oscillator.stop(audioCtx.currentTime + 0.05);
+      
+      setTimeout(() => {
+        if (audioCtx.state !== 'closed') audioCtx.close();
+      }, 100);
+    } catch (e) {
+      console.warn("Audio feedback not supported or blocked by browser.");
+    }
+  };
+
+  useEffect(() => {
+    const handleGlobalClick = (e: MouseEvent) => {
+      playClickSound();
+    };
+    window.addEventListener('mousedown', handleGlobalClick);
+    return () => window.removeEventListener('mousedown', handleGlobalClick);
+  }, []);
 
   const handleLogin = (username: string, role: UserRole) => {
     const u = users.find(u => u.name === username && u.role === role);
@@ -64,18 +102,33 @@ const App: React.FC = () => {
     }
   };
 
-  const handlePrint = () => {
+  const handlePrintCurrent = () => {
     const originalTitle = document.title;
     if (data && data.number) {
       const type = activeTab === 'INVOICE' ? 'NF' : 'Recibo';
       const provider = data.provider.name?.split(' ')[0] || 'MEI';
       document.title = `${type}-${data.number}-${provider}`;
     }
-    
-    // Pequeno delay para garantir que o título e renderização estejam prontos
+    setIsPrintingAll(false);
     setTimeout(() => {
       window.print();
       document.title = originalTitle;
+    }, 200);
+  };
+
+  const handlePrintAll = () => {
+    const originalTitle = document.title;
+    if (data && data.number) {
+      const provider = data.provider.name?.split(' ')[0] || 'MEI';
+      document.title = `COMPLETO-${data.number}-${provider}`;
+    }
+    setIsPrintingAll(true);
+    // Give react a tick to render the print-only div if we were using state for visibility
+    // Although our CSS handles it via .print-only { display: block !important; } during @media print
+    setTimeout(() => {
+      window.print();
+      document.title = originalTitle;
+      setIsPrintingAll(false);
     }, 200);
   };
 
@@ -130,10 +183,18 @@ const App: React.FC = () => {
           )}
 
           {state === AppState.PREVIEW && (
-            <div className="flex gap-3">
+            <div className="flex gap-2">
                <button 
-                 onClick={handlePrint}
-                 className="bg-gray-900 hover:bg-black text-white px-6 py-3 rounded-2xl flex items-center gap-2 text-sm font-black shadow-2xl transition-all active:scale-95 uppercase tracking-widest"
+                 onClick={handlePrintAll}
+                 title="Baixar NF e Recibo juntos"
+                 className="bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-3 rounded-2xl flex items-center gap-2 text-xs font-black shadow-xl transition-all active:scale-95 uppercase tracking-widest border border-emerald-500/20"
+               >
+                 <FileStack className="w-4 h-4" />
+                 <span className="hidden xl:inline">Pacote Completo</span>
+               </button>
+               <button 
+                 onClick={handlePrintCurrent}
+                 className="bg-gray-900 hover:bg-black text-white px-5 py-3 rounded-2xl flex items-center gap-2 text-xs font-black shadow-xl transition-all active:scale-95 uppercase tracking-widest"
                >
                  <Printer className="w-4 h-4" />
                  <span className="hidden md:inline">Salvar PDF</span>
@@ -197,7 +258,7 @@ const App: React.FC = () => {
         )}
 
         {state === AppState.PREVIEW && data && (
-          <div className="w-full max-w-5xl flex flex-col gap-12 print:block print:w-full mt-10">
+          <div className="w-full max-w-5xl flex flex-col gap-12 print:hidden mt-10">
             <div className="flex justify-center mb-4 no-print">
                <div className="bg-white/40 backdrop-blur-2xl p-2 rounded-[1.5rem] shadow-sm border border-gray-100 inline-flex">
                  <button
@@ -219,12 +280,24 @@ const App: React.FC = () => {
                </div>
             </div>
 
-            <div className="w-full flex justify-center print:block print:w-full">
+            <div className="w-full flex justify-center">
                {activeTab === 'INVOICE' ? (
                  <ModernInvoice data={data} settings={settings} />
                ) : (
                  <ReceiptPreview data={data} settings={settings} />
                )}
+            </div>
+          </div>
+        )}
+
+        {/* Print only section containing both documents */}
+        {data && (
+          <div className="print-only w-[210mm] print:block">
+            <div className="page-break">
+              <ModernInvoice data={data} settings={settings} />
+            </div>
+            <div>
+              <ReceiptPreview data={data} settings={settings} />
             </div>
           </div>
         )}
