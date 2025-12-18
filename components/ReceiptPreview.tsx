@@ -21,39 +21,45 @@ export const ReceiptPreview: React.FC<Props> = ({ data, settings, refProp }) => 
           <Scissors className="w-3 h-3 mr-2" /> Recibo de Quitação Profissional
         </div>
 
-        {/* Receipt Header - Compacto */}
-        <div className="flex justify-between items-start mb-8 border-b-4 border-gray-900 pb-5">
-          <div className="text-left flex flex-col gap-2">
+        {/* Receipt Header - Reorganizado (Logo Esquerda, Título Centro, Valor Direita) */}
+        <div className="flex items-center justify-between mb-10 border-b-4 border-gray-900 pb-6">
+          {/* Logo - Canto Esquerdo */}
+          <div className="w-1/3 flex justify-start">
             {settings?.logoUrl ? (
-              <div className="mb-1">
-                <img src={settings.logoUrl} alt="Logo Empresa" className="h-14 object-contain" />
-              </div>
+              <img src={settings.logoUrl} alt="Logo Empresa" className="h-16 object-contain" />
             ) : (
-              <div className="mb-1 bg-gray-900 text-white p-2.5 rounded-xl inline-flex">
-                <Building2 className="w-7 h-7" />
+              <div className="bg-gray-900 text-white p-3 rounded-2xl inline-flex">
+                <Building2 className="w-8 h-8" />
               </div>
             )}
-            
+          </div>
+
+          {/* Título e Referência - Centralizados */}
+          <div className="w-1/3 text-center flex flex-col gap-1">
             <h2 className="text-4xl font-black text-gray-900 tracking-tighter uppercase leading-none">RECIBO</h2>
-            <p className="text-[10px] font-black text-gray-500 uppercase tracking-[0.2em]">
+            <p className="text-[11px] font-black text-gray-400 uppercase tracking-[0.2em]">
               REFERENTE À NF Nº {data.number || '---'}
             </p>
           </div>
-          <div className="bg-gray-50 border-2 border-gray-900 p-5 rounded-2xl min-w-[200px] text-center print:bg-gray-50 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
-            <p className="text-[9px] text-gray-500 uppercase tracking-widest font-black mb-1">VALOR TOTAL</p>
-            <p className="text-2xl font-black text-gray-900 tabular-nums whitespace-nowrap">{formatCurrency(data.values.netValue)}</p>
+
+          {/* Valor Total - Canto Direito */}
+          <div className="w-1/3 flex justify-end">
+            <div className="bg-gray-50 border-2 border-gray-900 p-5 rounded-2xl min-w-[180px] text-center print:bg-gray-50 shadow-[5px_5px_0px_0px_rgba(0,0,0,1)]">
+              <p className="text-[9px] text-gray-500 uppercase tracking-widest font-black mb-1">VALOR TOTAL</p>
+              <p className="text-2xl font-black text-gray-900 tabular-nums whitespace-nowrap">{formatCurrency(data.values.netValue)}</p>
+            </div>
           </div>
         </div>
 
-        {/* Receipt Body - Ajuste de espaçamento */}
-        <div className="space-y-6 text-lg leading-relaxed text-gray-800 font-medium">
+        {/* Receipt Body */}
+        <div className="space-y-8 text-lg leading-relaxed text-gray-800 font-medium">
           <p>
             Recebemos de <span className="font-black border-b-2 border-gray-300 pb-0.5">{data.borrower.name || '____________________'}</span>, 
             inscrito(a) no CPF/CNPJ sob o nº <span className="font-mono text-base font-bold bg-gray-100 px-2 py-0.5 rounded-lg">{formatDocument(data.borrower.document) || '________________'}</span>,
             a importância líquida de:
           </p>
 
-          <div className="bg-gray-900 text-white p-5 rounded-2xl font-black italic text-lg shadow-lg print:bg-gray-900 print:text-white leading-tight">
+          <div className="bg-gray-900 text-white p-6 rounded-2xl font-black italic text-xl shadow-lg print:bg-gray-900 print:text-white leading-tight text-center">
             "{numberToWordsPTBR(data.values.netValue).toUpperCase()}"
           </div>
 
@@ -79,7 +85,7 @@ export const ReceiptPreview: React.FC<Props> = ({ data, settings, refProp }) => 
           </p>
         </div>
 
-        {/* Signature Area - Ajustado para evitar quebra */}
+        {/* Signature Area */}
         <div className="mt-8 mb-6 flex flex-col items-center justify-center">
           <div className="w-full max-w-xs border-b-2 border-gray-900 mb-3 opacity-20"></div>
           <p className="font-black text-lg text-gray-900 uppercase tracking-tight text-center">{data.provider.name}</p>
