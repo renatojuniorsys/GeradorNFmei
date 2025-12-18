@@ -1,7 +1,7 @@
-import React from 'react';
-import { InvoiceData, AppSettings } from '../types';
-import { formatCurrency, formatDate, formatDocument } from '../services/utils';
-import { QrCode, Building2, User, CheckCircle, Printer } from 'lucide-react';
+import { Building2, CheckCircle, Printer, QrCode, User, Check } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { formatCurrency, formatDocument, formatDate } from '../services/utils';
+import { AppSettings, InvoiceData } from '../types';
 
 interface Props {
   data: InvoiceData;
@@ -10,14 +10,35 @@ interface Props {
 }
 
 export const ModernInvoice: React.FC<Props> = ({ data, settings, refProp }) => {
+  const [showSuccess, setShowSuccess] = useState(false);
+
   const handlePrint = () => {
     window.print();
+    setShowSuccess(true);
   };
+
+  useEffect(() => {
+    if (showSuccess) {
+      const timer = setTimeout(() => {
+        setShowSuccess(false);
+      }, 3500);
+      return () => clearTimeout(timer);
+    }
+  }, [showSuccess]);
 
   return (
     <div className="relative w-full flex flex-col items-center group">
       {/* Botão de Impressão Prominente com Estilo Moderno */}
-      <div className="absolute -top-16 right-0 z-30 no-print">
+      <div className="absolute -top-16 right-0 z-30 no-print flex items-center gap-4">
+        {showSuccess && (
+          <div className="flex items-center gap-2 bg-emerald-500 text-white px-4 py-2.5 rounded-xl shadow-lg shadow-emerald-200 animate-fade-in border border-emerald-400/30">
+            <div className="bg-white/20 p-1 rounded-full">
+              <Check className="w-3.5 h-3.5" />
+            </div>
+            <span className="text-[10px] font-black uppercase tracking-widest">Documento Gerado!</span>
+          </div>
+        )}
+
         <button
           onClick={handlePrint}
           type="button"
@@ -30,183 +51,171 @@ export const ModernInvoice: React.FC<Props> = ({ data, settings, refProp }) => {
 
       <div 
         ref={refProp}
-        className="print-container bg-white text-gray-800 p-12 w-full max-w-[210mm] min-h-[297mm] shadow-2xl print:shadow-none print:w-[210mm] print:h-[297mm] print:max-w-none print:mx-0 print:p-12 relative flex flex-col box-border border border-gray-100 print:border-none rounded-[2.5rem] print:rounded-none overflow-hidden"
+        className="print-container bg-white text-gray-800 p-8 md:p-10 w-full max-w-[210mm] h-[297mm] shadow-2xl print:shadow-none print:w-[210mm] print:h-[297mm] print:max-w-none print:mx-0 print:p-8 relative flex flex-col box-border border border-gray-100 print:border-none rounded-[2.5rem] print:rounded-none overflow-hidden"
       >
         {/* Marca d'água de fundo */}
-        <div className="absolute top-0 right-0 p-8 opacity-[0.03] pointer-events-none select-none">
-          <Building2 size={450} />
+        <div className="absolute top-0 right-0 p-8 opacity-[0.02] pointer-events-none select-none">
+          <Building2 size={400} />
         </div>
 
-        {/* Cabeçalho */}
-        <header className="flex justify-between items-start border-b-4 border-indigo-50 pb-10 mb-10 relative z-10">
-          <div className="flex items-center gap-6">
-            <div className="bg-gradient-to-br from-indigo-600 to-indigo-800 p-5 rounded-[2rem] shadow-xl shadow-indigo-100 print:shadow-none">
-              <Building2 className="text-white w-10 h-10" />
+        {/* Cabeçalho - Otimizado */}
+        <header className="flex justify-between items-start border-b-2 border-indigo-50 pb-4 mb-4 relative z-10">
+          <div className="flex items-center gap-3">
+            <div className="bg-gradient-to-br from-indigo-600 to-indigo-800 p-3.5 rounded-2xl shadow-lg">
+              <Building2 className="text-white w-7 h-7" />
             </div>
             <div>
-              <h1 className="text-3xl font-black text-gray-900 tracking-tighter uppercase leading-none mb-2">Nota Fiscal de Serviço</h1>
-              <div className="flex items-center gap-3">
-                <span className="bg-indigo-600 text-white text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-[0.2em]">Eletrônica</span>
-                <span className="text-gray-400 text-xs font-bold uppercase tracking-widest">NFS-e Modelo MEI</span>
+              <h1 className="text-xl font-black text-gray-900 tracking-tighter uppercase leading-none mb-1">Nota Fiscal de Serviço</h1>
+              <div className="flex items-center gap-2">
+                <span className="bg-indigo-600 text-white text-[7px] font-black px-1.5 py-0.5 rounded-full uppercase tracking-wider">Eletrônica</span>
+                <span className="text-gray-400 text-[9px] font-bold uppercase tracking-widest">NFS-e Modelo MEI</span>
               </div>
             </div>
           </div>
           <div className="text-right">
-            <p className="text-[10px] font-black text-gray-300 uppercase tracking-[0.3em] mb-1">Nº do Documento</p>
-            <div className="text-5xl font-black text-indigo-600 tabular-nums tracking-tighter">
-              {data.number || '0000'}
-              <span className="text-xl text-gray-200 ml-2 font-light tracking-normal">/ {data.series || 'A'}</span>
+            <p className="text-[8px] font-black text-gray-300 uppercase tracking-[0.2em] mb-0.5">Documento Nº</p>
+            <div className="text-3xl font-black text-indigo-600 tabular-nums tracking-tighter leading-none">
+              {data.number || '00'}
+              <span className="text-base text-gray-200 ml-1 font-light tracking-normal">/{data.series || 'A'}</span>
             </div>
           </div>
         </header>
 
-        {/* Grid de Informações Chave */}
-        <div className="grid grid-cols-3 gap-6 mb-12 relative z-10">
-          <div className="bg-gray-50/50 p-6 rounded-[2rem] border border-gray-100/50 backdrop-blur-sm">
-            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3">Data de Emissão</p>
-            <p className="font-black text-gray-800 text-xl">{formatDate(data.issueDate)}</p>
+        {/* Informações Chave */}
+        <div className="grid grid-cols-3 gap-3 mb-5 relative z-10">
+          <div className="bg-gray-50/50 p-3 rounded-xl border border-gray-100/50">
+            <p className="text-[7px] font-black text-gray-400 uppercase tracking-widest mb-1">Emissão</p>
+            <p className="font-black text-gray-800 text-base">{formatDate(data.issueDate)}</p>
           </div>
-          <div className="bg-gray-50/50 p-6 rounded-[2rem] border border-gray-100/50 backdrop-blur-sm">
-            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3">Verificação</p>
-            <p className="font-mono text-sm font-black text-indigo-600 break-all">{data.verificationCode || '---'}</p>
+          <div className="bg-gray-50/50 p-3 rounded-xl border border-gray-100/50">
+            <p className="text-[7px] font-black text-gray-400 uppercase tracking-widest mb-1">Verificação</p>
+            <p className="font-mono text-[10px] font-black text-indigo-600 break-all leading-tight">{data.verificationCode || '---'}</p>
           </div>
-          <div className="bg-gray-50/50 p-6 rounded-[2rem] border border-gray-100/50 backdrop-blur-sm">
-            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3">Chave de Acesso</p>
-            <p className="font-mono text-[9px] leading-tight text-gray-500 break-all font-bold uppercase tracking-tighter">{data.accessKey || '---'}</p>
+          <div className="bg-gray-50/50 p-3 rounded-xl border border-gray-100/50">
+            <p className="text-[7px] font-black text-gray-400 uppercase tracking-widest mb-1">Chave de Acesso</p>
+            <p className="font-mono text-[6.5px] leading-tight text-gray-500 break-all font-bold uppercase">{data.accessKey || '---'}</p>
           </div>
         </div>
 
-        {/* Seção de Participantes */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-16 mb-12 relative z-10">
-          {/* Prestador */}
-          <div className="group/entity">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="w-11 h-11 rounded-2xl bg-indigo-50 flex items-center justify-center border border-indigo-100 transition-colors group-hover/entity:bg-indigo-600 group-hover/entity:text-white">
-                <Building2 className="w-5 h-5 text-indigo-600 group-hover/entity:text-white" />
+        {/* Participantes */}
+        <div className="grid grid-cols-2 gap-6 mb-5 relative z-10">
+          <div>
+            <div className="flex items-center gap-2 mb-1.5">
+              <div className="w-6 h-6 rounded-lg bg-indigo-50 flex items-center justify-center">
+                <Building2 className="w-3 h-3 text-indigo-600" />
               </div>
-              <h3 className="text-xs font-black text-gray-400 uppercase tracking-[0.2em]">Prestador</h3>
+              <h3 className="text-[7px] font-black text-gray-400 uppercase tracking-widest">Prestador</h3>
             </div>
-            <div className="space-y-4">
-              <p className="font-black text-2xl text-gray-900 leading-tight">{data.provider.name || 'Nome Indisponível'}</p>
-              <div className="text-sm text-gray-600 font-medium">
-                <p className="mb-3 flex items-center gap-2">
-                  <span className="text-[10px] text-gray-400 font-bold uppercase">CNPJ:</span>
-                  <span className="text-gray-900 font-black font-mono bg-gray-100 px-3 py-1 rounded-xl">{formatDocument(data.provider.document)}</span>
-                </p>
-                <p className="opacity-70 leading-relaxed max-w-[320px]">{data.provider.address || 'Endereço não informado'}</p>
-                <p className="font-black text-indigo-600 mt-2 text-base">{data.provider.city} — {data.provider.state}</p>
-              </div>
+            <p className="font-black text-sm text-gray-900 leading-tight mb-1">{data.provider.name}</p>
+            <div className="text-[10px] text-gray-500 space-y-0">
+              <p className="font-bold">CNPJ: <span className="text-gray-900 font-mono">{formatDocument(data.provider.document)}</span></p>
+              <p className="leading-tight opacity-80 line-clamp-2">{data.provider.address}</p>
+              <p className="font-black text-indigo-600 uppercase text-[8px]">{data.provider.city} — {data.provider.state}</p>
             </div>
           </div>
 
-          {/* Tomador */}
-          <div className="group/entity">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="w-11 h-11 rounded-2xl bg-gray-50 flex items-center justify-center border border-gray-100 transition-colors group-hover/entity:bg-gray-900 group-hover/entity:text-white">
-                <User className="w-5 h-5 text-gray-500 group-hover/entity:text-white" />
+          <div>
+            <div className="flex items-center gap-2 mb-1.5">
+              <div className="w-6 h-6 rounded-lg bg-gray-50 flex items-center justify-center">
+                <User className="w-3 h-3 text-gray-500" />
               </div>
-              <h3 className="text-xs font-black text-gray-400 uppercase tracking-[0.2em]">Tomador</h3>
+              <h3 className="text-[7px] font-black text-gray-400 uppercase tracking-widest">Tomador</h3>
             </div>
-            <div className="space-y-4">
-              <p className="font-black text-2xl text-gray-900 leading-tight">{data.borrower.name || 'Consumidor Final'}</p>
-              <div className="text-sm text-gray-600 font-medium">
-                <p className="mb-3 flex items-center gap-2">
-                  <span className="text-[10px] text-gray-400 font-bold uppercase">Documento:</span>
-                  <span className="text-gray-900 font-black font-mono bg-gray-100 px-3 py-1 rounded-xl">{formatDocument(data.borrower.document)}</span>
-                </p>
-                <p className="opacity-70 leading-relaxed max-w-[320px]">{data.borrower.address || 'Endereço não informado'}</p>
-                <p className="font-black text-gray-800 mt-2 text-base">{data.borrower.city} {data.borrower.state ? `— ${data.borrower.state}` : ''}</p>
-              </div>
+            <p className="font-black text-sm text-gray-900 leading-tight mb-1">{data.borrower.name}</p>
+            <div className="text-[10px] text-gray-500 space-y-0">
+              <p className="font-bold">DOC: <span className="text-gray-900 font-mono">{formatDocument(data.borrower.document)}</span></p>
+              <p className="leading-tight opacity-80 line-clamp-2">{data.borrower.address}</p>
+              <p className="font-black text-gray-800 uppercase text-[8px]">{data.borrower.city} {data.borrower.state && `— ${data.borrower.state}`}</p>
             </div>
           </div>
         </div>
 
-        {/* Discriminação dos Serviços */}
-        <div className="mb-12 flex-grow relative z-10">
-          <h3 className="text-xs font-black text-gray-400 uppercase tracking-[0.2em] mb-5 border-b-2 border-indigo-50 pb-3">
-            Discriminação dos Serviços Prestados
+        {/* Serviços */}
+        <div className="mb-5 flex-grow relative z-10 overflow-hidden flex flex-col">
+          <h3 className="text-[7px] font-black text-gray-400 uppercase tracking-widest mb-1.5 border-b border-indigo-50 pb-0.5">
+            Discriminação dos Serviços
           </h3>
-          <div className="bg-gray-50/30 rounded-[2.5rem] p-12 text-base text-gray-800 leading-relaxed whitespace-pre-wrap min-h-[300px] border border-indigo-50/50 print:bg-white shadow-inner relative overflow-hidden">
-            {data.description || 'Descrição não informada.'}
-            
+          <div className="bg-gray-50/30 rounded-2xl p-4 text-[11px] text-gray-700 leading-relaxed whitespace-pre-wrap flex-grow border border-indigo-50/50 print:bg-white relative">
+            {data.description || 'Descrição não disponível.'}
             {data.activityCode && (
-               <div className="mt-12 pt-10 border-t border-indigo-50/50 text-xs text-gray-400 font-black">
-                 <span className="text-indigo-600 uppercase tracking-widest mr-4">Código CNAE/Serviço:</span> {data.activityCode}
+               <div className="mt-2 text-[6.5px] text-gray-400 font-black">
+                 <span className="text-indigo-600 uppercase mr-1">CNAE:</span> {data.activityCode}
                </div>
             )}
           </div>
         </div>
 
-        {/* Resumo de Valores */}
-        <div className="bg-indigo-950 text-white rounded-[3rem] p-10 mb-12 shadow-2xl shadow-indigo-950/20 relative overflow-hidden print:bg-indigo-950 print:text-white">
-          <div className="absolute inset-0 opacity-10 bg-[radial-gradient(circle_at_top_right,_var(--tw-gradient-stops))] from-indigo-400 via-transparent to-transparent"></div>
-          
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-12 text-center relative z-10">
-            <div>
-              <p className="text-indigo-300/60 text-[10px] font-black uppercase tracking-[0.3em] mb-4">Valor Bruto</p>
-              <p className="text-2xl font-black">{formatCurrency(data.values.serviceValue)}</p>
+        {/* Valores */}
+        <div className="bg-indigo-950 text-white rounded-[1.5rem] p-4 mb-5 relative overflow-hidden print:bg-indigo-950 print:text-white shadow-xl">
+          <div className="grid grid-cols-4 gap-2 text-center items-center relative z-10">
+            <div className="flex flex-col">
+              <p className="text-indigo-300/60 text-[6.5px] font-black uppercase tracking-widest mb-0.5">Bruto</p>
+              <p className="text-xs font-black whitespace-nowrap tabular-nums">{formatCurrency(data.values.serviceValue)}</p>
             </div>
-            <div>
-              <p className="text-indigo-300/60 text-[10px] font-black uppercase tracking-[0.3em] mb-4">Descontos</p>
-              <p className="text-2xl font-black text-emerald-400">{formatCurrency(data.values.discount)}</p>
+            <div className="flex flex-col">
+              <p className="text-indigo-300/60 text-[6.5px] font-black uppercase tracking-widest mb-0.5">Desconto</p>
+              <p className="text-xs font-black text-emerald-400 whitespace-nowrap tabular-nums">{formatCurrency(data.values.discount)}</p>
             </div>
-            <div>
-              <p className="text-indigo-300/60 text-[10px] font-black uppercase tracking-[0.3em] mb-4">Impostos Retidos</p>
-              <p className="text-2xl font-black text-rose-300">{formatCurrency(data.values.taxAmount || 0)}</p>
+            <div className="flex flex-col">
+              <p className="text-indigo-300/60 text-[6.5px] font-black uppercase tracking-widest mb-0.5">Imp. Retidos</p>
+              <p className="text-xs font-black text-rose-300 whitespace-nowrap tabular-nums">{formatCurrency(data.values.taxAmount || 0)}</p>
             </div>
-            <div className="bg-white/10 backdrop-blur-2xl rounded-[2rem] p-6 -my-6 flex flex-col justify-center border border-white/10 shadow-xl">
-              <p className="text-indigo-100 text-[10px] font-black uppercase tracking-[0.3em] mb-2">Líquido a Receber</p>
-              <p className="text-4xl font-black tracking-tighter whitespace-nowrap">{formatCurrency(data.values.netValue)}</p>
+            <div className="bg-white/10 backdrop-blur-md rounded-xl py-2 px-1 border border-white/10">
+              <p className="text-indigo-100 text-[6.5px] font-black uppercase tracking-widest mb-0.5">Líquido</p>
+              <p className="text-base font-black whitespace-nowrap tabular-nums tracking-tighter leading-none">
+                {formatCurrency(data.values.netValue)}
+              </p>
             </div>
           </div>
         </div>
 
-        {/* Rodapé */}
-        <footer className="mt-auto border-t-4 border-indigo-50 pt-10 flex flex-col gap-8 relative z-10">
-          <div className="flex justify-between items-center text-[10px] text-gray-300 font-black tracking-[0.2em] uppercase">
-            {/* Status de Autenticidade */}
-            <div className="flex items-center gap-4 bg-emerald-50 text-emerald-700 px-8 py-4 rounded-full border border-emerald-100">
-               <CheckCircle className="w-5 h-5" />
-               <span className="text-xs">Autenticidade Garantida</span>
+        {/* Rodapé - Compactado para garantir página única */}
+        <footer className="mt-auto border-t-2 border-indigo-50 pt-3 flex flex-col gap-3 relative z-10">
+          <div className="flex justify-between items-end gap-4">
+            {/* Selo e Status */}
+            <div className="flex flex-col gap-2">
+              <div className="flex items-center gap-1.5 bg-emerald-50 text-emerald-700 px-2 py-1 rounded-full border border-emerald-100 self-start">
+                 <CheckCircle className="w-3 h-3" />
+                 <span className="text-[7px] font-black uppercase tracking-wider">Autenticidade Garantida</span>
+              </div>
+              <p className="italic font-bold text-gray-300 text-[6.5px] max-w-[240px] leading-tight">
+                Representação visual de dados fiscais (XML/PDF) para fins informativos e organizacionais.
+              </p>
             </div>
 
-            {/* QR Code Prominente e Hash */}
-            <div className="flex items-center gap-8">
-               <div className="flex flex-col items-center gap-2">
-                 {settings?.qrCodeUrl ? (
-                   <div className="relative p-1.5 bg-white rounded-[1.5rem] shadow-xl border border-gray-100 group/qr">
-                     <img src={settings.qrCodeUrl} alt="QR Validação" className="w-24 h-24 object-contain rounded-2xl" />
-                     <div className="absolute -top-3 -right-3 bg-indigo-600 text-white text-[8px] px-3 py-1 rounded-full shadow-lg border border-indigo-400 animate-bounce">
-                       NOVO
-                     </div>
-                   </div>
-                 ) : (
-                   <div className="w-24 h-24 border-2 border-dashed border-gray-100 rounded-[1.5rem] flex items-center justify-center bg-gray-50/50">
-                     <QrCode className="w-10 h-10 opacity-10" />
-                   </div>
-                 )}
-                 <p className="text-[8px] font-black text-indigo-500 uppercase tracking-widest text-center mt-1">
-                   Escaneie para<br/>Validação ou Pagamento
+            {/* QR e Segurança em Linha Compacta */}
+            <div className="flex items-center gap-4">
+               <div className="flex flex-col items-center gap-0.5">
+                 <div className="p-1 bg-white rounded-lg shadow-sm border border-indigo-100/40">
+                   {settings?.qrCodeUrl ? (
+                     <img src={settings.qrCodeUrl} alt="QR" className="w-10 h-10 object-contain" />
+                   ) : (
+                     <QrCode className="w-10 h-10 opacity-5" />
+                   )}
+                 </div>
+                 <p className="text-[5.5px] font-black text-indigo-600 uppercase tracking-widest leading-none">
+                   Validar
                  </p>
                </div>
                
-               <div className="text-right flex flex-col justify-center">
-                 <p className="mb-2 text-gray-400 text-[9px]">Hash SHA-256 de Segurança</p>
-                 <p className="font-mono text-sm text-indigo-600 font-black tracking-normal bg-indigo-50 px-4 py-2 rounded-xl border border-indigo-100/50">
-                   MEI-PRO-{data.verificationCode?.substring(0, 4) || '8293'}-F1A2
+               <div className="text-right">
+                 <p className="mb-0.5 text-gray-400 text-[6.5px] font-black uppercase">Segurança SHA-256</p>
+                 <p className="font-mono text-[8px] text-indigo-600 font-black bg-indigo-50 px-2 py-1 rounded-md border border-indigo-100/50">
+                   {data.verificationCode?.substring(0, 12) || 'SECURITY-HASH-2025'}
                  </p>
                </div>
             </div>
           </div>
 
-          {/* Nota Legal e Créditos */}
-          <div className="flex justify-between items-center border-t border-gray-50 pt-6">
-            <p className="italic font-bold text-gray-300 lowercase tracking-normal text-[9px] max-w-[400px]">
-              Este documento é uma representação visual inteligente dos dados contidos no arquivo fiscal original (XML/PDF) e possui fins informativos e de organização administrativa.
+          <div className="flex justify-between items-center border-t border-gray-50 pt-2">
+            <p className="font-black text-gray-200 text-[7px] tracking-[0.2em] uppercase">
+              MEI Smart Doc &bull; v2.5 &bull; Processado via Gemini AI
             </p>
-            <p className="font-black text-gray-200 text-[10px] tracking-[0.5em] uppercase">
-              MEI Smart Doc &bull; v2.5
-            </p>
+            <div className="flex items-center gap-1">
+              <span className="w-1 h-1 rounded-full bg-indigo-400"></span>
+              <span className="w-1 h-1 rounded-full bg-indigo-300"></span>
+              <span className="w-1 h-1 rounded-full bg-indigo-200"></span>
+            </div>
           </div>
         </footer>
       </div>
