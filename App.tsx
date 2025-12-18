@@ -17,7 +17,8 @@ const App: React.FC = () => {
 
   const [settings, setSettings] = useState<AppSettings>({
     logoUrl: null,
-    qrCodeUrl: null
+    qrCodeUrl: null,
+    signatureUrl: null
   });
 
   const [user, setUser] = useState<User | null>(null);

@@ -1,7 +1,8 @@
+
 import React from 'react';
 import { InvoiceData, AppSettings } from '../types';
 import { formatCurrency, formatDate, formatDocument, numberToWordsPTBR } from '../services/utils';
-import { Scissors, Building2, QrCode, CheckCircle2 } from 'lucide-react';
+import { Scissors, Building2, QrCode, CheckCircle2, PenTool } from 'lucide-react';
 
 interface Props {
   data: InvoiceData;
@@ -115,8 +116,23 @@ export const ReceiptPreview: React.FC<Props> = ({ data, settings, refProp, isSuc
           </p>
         </div>
 
-        {/* Signature Area */}
-        <div className="mt-10 mb-8 flex flex-col items-center justify-center">
+        {/* Signature Area com Assinatura Digital */}
+        <div className="mt-10 mb-8 flex flex-col items-center justify-center relative">
+          {settings?.signatureUrl ? (
+            <div className="relative mb-[-1.5rem] flex flex-col items-center">
+              <img 
+                src={settings.signatureUrl} 
+                alt="Assinatura Digital" 
+                className="max-h-24 w-auto object-contain transition-transform hover:scale-105"
+              />
+              <div className="absolute top-0 right-[-2rem] flex items-center gap-1 text-[8px] font-black text-indigo-600 bg-white/80 px-2 py-0.5 rounded-full border border-indigo-100 shadow-sm no-print">
+                <PenTool className="w-3 h-3" /> DIGITAL
+              </div>
+            </div>
+          ) : (
+            <div className="h-20"></div> // Espaçador para assinatura manual
+          )}
+          
           <div className="w-full max-w-sm border-b-2 border-gray-900 mb-4 opacity-30"></div>
           <p className="font-black text-2xl text-gray-900 uppercase tracking-tight text-center">{data.provider.name}</p>
           <p className="text-xs font-bold text-gray-500 tracking-widest mt-1 uppercase">CNPJ: {formatDocument(data.provider.document)}</p>

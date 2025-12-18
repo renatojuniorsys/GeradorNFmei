@@ -1,4 +1,5 @@
-import { Building2, CheckCircle, QrCode, User, Copy, CheckCircle2 } from 'lucide-react';
+
+import { Building2, CheckCircle, QrCode, User, Copy, CheckCircle2, PenTool } from 'lucide-react';
 import React, { useState } from 'react';
 import { formatCurrency, formatDocument, formatDate } from '../services/utils';
 import { AppSettings, InvoiceData } from '../types';
@@ -154,7 +155,7 @@ export const ModernInvoice: React.FC<Props> = ({ data, settings, refProp, isSucc
             </div>
             <p className="font-black text-lg text-gray-900 leading-tight mb-2">{data.borrower.name || '---'}</p>
             <div className="text-xs text-gray-500 space-y-1 font-medium">
-              <p>DOC: <span className="text-gray-900 font-mono font-bold">{formatDocument(data.borrower.document)}</span></p>
+              <p>DOC: <span className="text-gray-900 font-mono font-bold">{formatDocument(data.borrower.document) || '---'}</span></p>
               <p className="leading-relaxed opacity-90 line-clamp-2">{data.borrower.address || '---'}</p>
               <p className="font-black text-gray-800 uppercase text-[10px] tracking-wide">{data.borrower.city || '---'} {data.borrower.state && `— ${data.borrower.state}`}</p>
             </div>
@@ -204,15 +205,29 @@ export const ModernInvoice: React.FC<Props> = ({ data, settings, refProp, isSucc
         <footer className="mt-auto border-t-2 border-indigo-50 pt-6 flex flex-col gap-6 relative z-10">
           <div className="flex justify-between items-center gap-8">
             
-            {/* Esquerda: Status e Badge */}
+            {/* Esquerda: Status, Badge e Assinatura Digital se disponível */}
             <div className="flex flex-col gap-3 flex-grow">
               <div className="flex items-center gap-2 bg-emerald-50 text-emerald-700 px-4 py-2 rounded-full border border-emerald-100 self-start shadow-sm">
                  <CheckCircle className="w-4 h-4" />
                  <span className="text-[10px] font-black uppercase tracking-widest">Autenticidade Garantida</span>
               </div>
-              <p className="italic font-bold text-gray-300 text-[9px] max-w-[320px] leading-relaxed">
-                A autenticidade desta NFS-e pode ser verificada pela leitura deste código QR ou pela consulta da chave de acesso no portal nacional da NFS-e.
-              </p>
+              
+              {settings?.signatureUrl ? (
+                <div className="flex items-center gap-3 bg-indigo-50/50 p-2 rounded-2xl border border-indigo-100/30 self-start">
+                   <img src={settings.signatureUrl} alt="Assinatura Digital" className="h-10 w-auto object-contain opacity-80" />
+                   <div className="flex flex-col">
+                      <div className="flex items-center gap-1 text-indigo-600">
+                        <PenTool className="w-3 h-3" />
+                        <span className="text-[8px] font-black uppercase tracking-tighter">Assinado Digitalmente</span>
+                      </div>
+                      <span className="text-[7px] text-gray-400 font-mono">{new Date().toISOString().substring(0,10)}</span>
+                   </div>
+                </div>
+              ) : (
+                <p className="italic font-bold text-gray-300 text-[9px] max-w-[320px] leading-relaxed">
+                  A autenticidade desta NFS-e pode ser verificada pela leitura deste código QR ou pela consulta da chave de acesso no portal nacional da NFS-e.
+                </p>
+              )}
             </div>
 
             {/* Centro: QR Code Oficial (Ajustado para 30mm com Efeito Zoom) */}

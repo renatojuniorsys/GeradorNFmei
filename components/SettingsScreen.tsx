@@ -1,6 +1,7 @@
+
 import React, { useState } from 'react';
 import { User, AppSettings, UserRole } from '../types';
-import { Trash2, Plus, Upload, Save, UserPlus, Shield, UserCog, Image as ImageIcon, QrCode } from 'lucide-react';
+import { Trash2, Plus, Upload, Save, UserPlus, Shield, UserCog, Image as ImageIcon, QrCode, PenTool } from 'lucide-react';
 
 interface Props {
   users: User[];
@@ -11,12 +12,12 @@ interface Props {
 }
 
 export const SettingsScreen: React.FC<Props> = ({ users, setUsers, settings, setSettings, onClose }) => {
-  const [activeTab, setActiveTab] = useState<'VISUAL' | 'USERS'>('VISUAL');
+  const [activeTab, setActiveTab] = useState<'VISUAL' | 'USERS' | 'SIGNATURE'>('VISUAL');
   
   // New User State
   const [newUser, setNewUser] = useState({ name: '', password: '', role: 'OPERATOR' as UserRole });
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>, field: 'logoUrl' | 'qrCodeUrl') => {
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>, field: keyof AppSettings) => {
     if (e.target.files && e.target.files[0]) {
       const reader = new FileReader();
       reader.onload = (ev) => {
@@ -67,6 +68,14 @@ export const SettingsScreen: React.FC<Props> = ({ users, setUsers, settings, set
           }`}
         >
           <ImageIcon className="w-4 h-4" /> Personalização Visual
+        </button>
+        <button
+          onClick={() => setActiveTab('SIGNATURE')}
+          className={`flex-1 py-4 text-sm font-medium flex items-center justify-center gap-2 transition-colors ${
+            activeTab === 'SIGNATURE' ? 'text-indigo-600 border-b-2 border-indigo-600 bg-indigo-50' : 'text-gray-500 hover:text-gray-700'
+          }`}
+        >
+          <PenTool className="w-4 h-4" /> Assinatura Digital
         </button>
         <button
           onClick={() => setActiveTab('USERS')}
@@ -121,6 +130,54 @@ export const SettingsScreen: React.FC<Props> = ({ users, setUsers, settings, set
               {settings.qrCodeUrl && (
                 <button onClick={() => setSettings(p => ({...p, qrCodeUrl: null}))} className="mt-2 text-xs text-red-500 hover:underline">Remover</button>
               )}
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'SIGNATURE' && (
+          <div className="max-w-xl mx-auto">
+            <div className="border rounded-3xl p-10 flex flex-col items-center text-center bg-gray-50 border-dashed border-gray-300">
+              <div className="w-full h-48 mb-6 bg-white border border-gray-200 rounded-2xl flex items-center justify-center overflow-hidden relative shadow-inner">
+                {settings.signatureUrl ? (
+                  <img src={settings.signatureUrl} alt="Assinatura" className="max-h-32 w-auto object-contain" />
+                ) : (
+                  <div className="flex flex-col items-center gap-3 text-gray-300">
+                    <PenTool className="w-12 h-12" />
+                    <span className="font-bold text-sm uppercase tracking-widest">Nenhuma Assinatura Salva</span>
+                  </div>
+                )}
+              </div>
+              <h3 className="text-xl font-black text-gray-900 mb-2">Sua Assinatura Digital</h3>
+              <p className="text-sm text-gray-500 mb-8 max-w-sm">
+                Carregue uma imagem da sua assinatura (preferencialmente PNG com fundo transparente) para ser aplicada automaticamente nos recibos e notas.
+              </p>
+              
+              <div className="flex gap-3">
+                <label className="cursor-pointer bg-indigo-600 text-white px-6 py-3 rounded-2xl text-sm font-black uppercase tracking-widest hover:bg-indigo-700 transition-all flex items-center gap-2 shadow-xl shadow-indigo-100 active:scale-95">
+                  <Upload className="w-4 h-4" />
+                  Carregar Imagem
+                  <input type="file" className="hidden" accept="image/*" onChange={(e) => handleImageUpload(e, 'signatureUrl')} />
+                </label>
+                
+                {settings.signatureUrl && (
+                  <button 
+                    onClick={() => setSettings(p => ({...p, signatureUrl: null}))}
+                    className="bg-white border border-gray-200 text-rose-500 px-6 py-3 rounded-2xl text-sm font-black uppercase tracking-widest hover:bg-rose-50 transition-all active:scale-95"
+                  >
+                    Remover
+                  </button>
+                )}
+              </div>
+            </div>
+            
+            <div className="mt-8 p-6 bg-blue-50 rounded-2xl border border-blue-100 flex gap-4 items-start">
+              <Shield className="w-6 h-6 text-blue-500 flex-shrink-0 mt-1" />
+              <div>
+                <h4 className="font-black text-blue-900 text-sm uppercase mb-1">Dica de Qualidade</h4>
+                <p className="text-xs text-blue-700 leading-relaxed">
+                  Para um resultado mais profissional, assine em uma folha branca lisa, tire uma foto com boa iluminação e use um removedor de fundo online antes de carregar aqui.
+                </p>
+              </div>
             </div>
           </div>
         )}

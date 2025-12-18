@@ -1,3 +1,4 @@
+
 export interface EntityData {
   name: string | null;
   document: string | null; // CPF or CNPJ
@@ -54,4 +55,5 @@ export interface User {
 export interface AppSettings {
   logoUrl: string | null;
   qrCodeUrl: string | null;
+  signatureUrl: string | null;
 }
