@@ -1,5 +1,5 @@
 {
-  "name": "MEI Smart Invoice & Receipt Generator",
+  "name": "geradornfmei",
   "description": "A SaaS-ready tool powered by Gemini 2.5 Flash to parse Brazilian MEI Invoices (NFS-e), validate data, and generate modern PDFs and formal receipts instantly.",
   "requestFramePermissions": []
 }

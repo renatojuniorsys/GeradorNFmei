@@ -1,26 +1,20 @@
-
 import { GoogleGenAI, Type } from "@google/genai";
 import { InvoiceData } from "../types";
 
 const parseGeminiResponse = (responseText: string): InvoiceData => {
   try {
-    // The response might be wrapped in markdown code blocks
     const cleanedText = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
     return JSON.parse(cleanedText) as InvoiceData;
   } catch (e) {
     console.error("JSON Parsing Error:", e);
-    throw new Error("Falha ao processar resposta da IA.");
+    throw new Error("Erro ao interpretar os dados da nota. Tente reenviar o arquivo.");
   }
 };
 
 export const extractInvoiceData = async (fileBase64: string, mimeType: string): Promise<InvoiceData> => {
-  if (!process.env.API_KEY) {
-    throw new Error("API Key is missing.");
-  }
-
+  // A chave de API deve vir exclusivamente de process.env.API_KEY conforme as regras
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
-  // Schema definition for Type Safety in extraction
   const schema = {
     type: Type.OBJECT,
     properties: {
@@ -33,7 +27,7 @@ export const extractInvoiceData = async (fileBase64: string, mimeType: string): 
         type: Type.OBJECT,
         properties: {
           name: { type: Type.STRING },
-          document: { type: Type.STRING, description: "CNPJ or CPF unformatted" },
+          document: { type: Type.STRING, description: "CNPJ ou CPF (apenas dígitos)" },
           address: { type: Type.STRING },
           city: { type: Type.STRING },
           state: { type: Type.STRING },
@@ -45,7 +39,7 @@ export const extractInvoiceData = async (fileBase64: string, mimeType: string): 
         type: Type.OBJECT,
         properties: {
           name: { type: Type.STRING },
-          document: { type: Type.STRING, description: "CNPJ or CPF unformatted" },
+          document: { type: Type.STRING, description: "CNPJ ou CPF (apenas dígitos)" },
           address: { type: Type.STRING },
           city: { type: Type.STRING },
           state: { type: Type.STRING },
@@ -53,8 +47,8 @@ export const extractInvoiceData = async (fileBase64: string, mimeType: string): 
           phone: { type: Type.STRING },
         }
       },
-      description: { type: Type.STRING, description: "Discriminação dos serviços" },
-      activityCode: { type: Type.STRING, description: "Código do serviço / CNAE" },
+      description: { type: Type.STRING, description: "Texto completo da discriminação do serviço" },
+      activityCode: { type: Type.STRING, description: "Código de atividade/serviço" },
       values: {
         type: Type.OBJECT,
         properties: {
@@ -80,13 +74,9 @@ export const extractInvoiceData = async (fileBase64: string, mimeType: string): 
             }
           },
           {
-            text: `Analise este documento fiscal (NFS-e ou Recibo) brasileiro. 
-            Extraia todos os campos possíveis com precisão. 
-            Normalizar:
-            - Datas para YYYY-MM-DD
-            - Valores numéricos (float)
-            - Remover formatação de CPF/CNPJ
-            Se um campo não existir, retorne null.`
+            text: `Atue como um OCR semântico para NFS-e do Brasil. Extraia os dados seguindo fielmente as regras fiscais. 
+            Datas em YYYY-MM-DD. Valores em float. Campos inexistentes como null. 
+            Não formate documentos (apenas números).`
           }
         ]
       },
@@ -96,28 +86,25 @@ export const extractInvoiceData = async (fileBase64: string, mimeType: string): 
       }
     });
 
-    if (!response.text) {
-      throw new Error("No text returned from API");
+    const text = response.text;
+    if (!text) {
+      throw new Error("Resposta vazia da inteligência artificial.");
     }
 
-    const data = parseGeminiResponse(response.text);
+    const data = parseGeminiResponse(text);
 
-    // Validation: Access Key (Chave de Acesso)
     if (data.accessKey) {
-      let cleanKey = data.accessKey.replace(/\D/g, '');
-      
-      // Handle OCR noise where it captures adjacent numbers
-      if (cleanKey.length > 44) {
-        cleanKey = cleanKey.substring(0, 44);
-      }
-
-      data.accessKey = cleanKey;
+      data.accessKey = data.accessKey.replace(/\D/g, '').substring(0, 44);
     }
 
     return data;
 
-  } catch (error) {
-    console.error("Gemini Extraction Error:", error);
+  } catch (error: any) {
+    console.error("Gemini Error:", error);
+    // Repassa o erro com mensagem amigável para o usuário
+    if (error.message?.includes("API key")) {
+       throw new Error("Erro de autenticação na API. Por favor, verifique as configurações do sistema no Netlify.");
+    }
     throw error;
   }
 };
