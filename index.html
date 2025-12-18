@@ -1,9 +1,10 @@
+
 <!DOCTYPE html>
 <html lang="pt-BR">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>MEI Smart Doc - Gerador de NF e Recibos</title>
+    <title>MEI-GeradorNf - Gerador de NF e Recibos</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
       window.process = window.process || { env: {} };
@@ -19,6 +20,7 @@
 
       .page-break {
         break-after: page;
+        page-break-after: always;
       }
 
       @media print {
@@ -34,11 +36,15 @@
           margin: 0 !important;
           padding: 0 !important;
           width: 210mm !important;
-          height: 297mm !important;
+          /* Removido height fixo para permitir múltiplas páginas */
+          height: auto !important;
         }
 
         .no-print { display: none !important; }
-        .print-only { display: block !important; }
+        .print-only { 
+          display: block !important; 
+          width: 210mm !important;
+        }
         
         #root { 
           width: 210mm !important; 
@@ -53,6 +59,7 @@
           width: 210mm !important;
         }
 
+        /* Container de cada documento (NF e Recibo) */
         .print-container {
           width: 210mm !important;
           height: 297mm !important;
@@ -63,6 +70,9 @@
           border: none !important;
           box-sizing: border-box !important;
           overflow: hidden !important;
+          position: relative !important;
+          page-break-inside: avoid !important;
+          break-inside: avoid !important;
         }
       }
 

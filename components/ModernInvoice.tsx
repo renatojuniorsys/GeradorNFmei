@@ -1,5 +1,5 @@
-import { Building2, CheckCircle, QrCode, User } from 'lucide-react';
-import React from 'react';
+import { Building2, CheckCircle, QrCode, User, Copy, CheckCircle2 } from 'lucide-react';
+import React, { useState } from 'react';
 import { formatCurrency, formatDocument, formatDate } from '../services/utils';
 import { AppSettings, InvoiceData } from '../types';
 
@@ -7,15 +7,45 @@ interface Props {
   data: InvoiceData;
   settings?: AppSettings;
   refProp?: React.RefObject<HTMLDivElement>;
+  isSuccess?: boolean;
 }
 
-export const ModernInvoice: React.FC<Props> = ({ data, settings, refProp }) => {
-  // Gera o link do QR Code dinamicamente baseado na chave de acesso ou código de verificação
-  const qrData = data.accessKey || data.verificationCode || 'validacao-mei-smart-doc';
-  const dynamicQrUrl = `https://chart.googleapis.com/chart?cht=qr&chs=150x150&chl=${qrData}`;
+export const ModernInvoice: React.FC<Props> = ({ data, settings, refProp, isSuccess }) => {
+  const [copiedField, setCopiedField] = useState<string | null>(null);
+
+  // Gera o link oficial da NFS-e Nacional conforme padrão gov.br
+  const cleanKey = data.accessKey?.replace(/\D/g, '') || '';
+  const officialUrl = cleanKey 
+    ? `https://www.nfse.gov.br/ConsultaPublica/?tpc=1&chave=${cleanKey}`
+    : `https://www.nfse.gov.br/ConsultaPublica/?cod=${data.verificationCode}`;
+    
+  // Utiliza o serviço goqr.me para geração, permitindo o link direto do portal
+  const dynamicQrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(officialUrl)}&margin=10`;
+
+  const handleCopy = (text: string | null, fieldId: string) => {
+    if (!text) return;
+    navigator.clipboard.writeText(text);
+    setCopiedField(fieldId);
+    setTimeout(() => setCopiedField(null), 2000);
+  };
 
   return (
     <div className="relative w-full flex flex-col items-center group">
+      {/* Success Animation Overlay */}
+      {isSuccess && (
+        <div className="absolute inset-0 z-[100] flex items-center justify-center bg-white/40 backdrop-blur-[2px] rounded-[2.5rem] animate-fade-in no-print">
+          <div className="bg-white p-12 rounded-[3rem] shadow-2xl border border-emerald-100 flex flex-col items-center gap-6 animate-pop-in">
+             <div className="bg-emerald-500 p-6 rounded-full shadow-lg shadow-emerald-200">
+                <CheckCircle2 className="w-16 h-16 text-white" />
+             </div>
+             <div className="text-center">
+               <h3 className="text-2xl font-black text-gray-900 uppercase tracking-tighter">Documento Gerado!</h3>
+               <p className="text-emerald-600 font-bold text-sm tracking-widest mt-1 uppercase">Ação realizada com sucesso</p>
+             </div>
+          </div>
+        </div>
+      )}
+
       <div 
         ref={refProp}
         className="print-container bg-white text-gray-800 p-8 md:p-10 w-full max-w-[210mm] h-[297mm] shadow-2xl print:shadow-none print:w-[210mm] print:h-[297mm] print:max-w-none print:mx-0 print:p-8 relative flex flex-col box-border border border-gray-100 print:border-none rounded-[2.5rem] print:rounded-none overflow-hidden"
@@ -54,11 +84,45 @@ export const ModernInvoice: React.FC<Props> = ({ data, settings, refProp }) => {
             <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1.5">Emissão</p>
             <p className="font-black text-gray-900 text-lg">{formatDate(data.issueDate)}</p>
           </div>
-          <div className="bg-gray-50/50 p-4 rounded-2xl border border-gray-100/50">
+          
+          <div 
+            className="bg-gray-50/50 p-4 rounded-2xl border border-gray-100/50 cursor-pointer hover:bg-indigo-50 transition-all relative group/copy no-print"
+            onClick={() => handleCopy(data.verificationCode, 'verify-top')}
+            title="Clique para copiar"
+          >
+            <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1.5 flex justify-between items-center">
+              Verificação
+              <Copy className="w-2.5 h-2.5 opacity-0 group-hover/copy:opacity-100 transition-opacity" />
+            </p>
+            <p className="font-mono text-xs font-black text-indigo-600 break-all leading-tight">{data.verificationCode || 'PENDENTE'}</p>
+            {copiedField === 'verify-top' && (
+              <div className="absolute -top-10 left-1/2 -translate-x-1/2 bg-gray-900 text-white text-[10px] px-3 py-1.5 rounded-xl font-black uppercase tracking-widest shadow-xl animate-pop-in z-50 whitespace-nowrap">
+                Copiado!
+              </div>
+            )}
+          </div>
+          <div className="print:block hidden bg-gray-50/50 p-4 rounded-2xl border border-gray-100/50">
             <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1.5">Verificação</p>
             <p className="font-mono text-xs font-black text-indigo-600 break-all leading-tight">{data.verificationCode || 'PENDENTE'}</p>
           </div>
-          <div className="bg-gray-50/50 p-4 rounded-2xl border border-gray-100/50">
+
+          <div 
+            className="bg-gray-50/50 p-4 rounded-2xl border border-gray-100/50 cursor-pointer hover:bg-indigo-50 transition-all relative group/copy no-print"
+            onClick={() => handleCopy(data.accessKey, 'access')}
+            title="Clique para copiar chave completa"
+          >
+            <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1.5 flex justify-between items-center">
+              Chave de Acesso
+              <Copy className="w-2.5 h-2.5 opacity-0 group-hover/copy:opacity-100 transition-opacity" />
+            </p>
+            <p className="font-mono text-[8px] leading-tight text-gray-500 break-all font-bold uppercase">{data.accessKey || 'AGUARDANDO PROCESSAMENTO'}</p>
+            {copiedField === 'access' && (
+              <div className="absolute -top-10 left-1/2 -translate-x-1/2 bg-gray-900 text-white text-[10px] px-3 py-1.5 rounded-xl font-black uppercase tracking-widest shadow-xl animate-pop-in z-50 whitespace-nowrap">
+                Copiado!
+              </div>
+            )}
+          </div>
+          <div className="print:block hidden bg-gray-50/50 p-4 rounded-2xl border border-gray-100/50">
             <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1.5">Chave de Acesso</p>
             <p className="font-mono text-[8px] leading-tight text-gray-500 break-all font-bold uppercase">{data.accessKey || 'AGUARDANDO PROCESSAMENTO'}</p>
           </div>
@@ -112,31 +176,31 @@ export const ModernInvoice: React.FC<Props> = ({ data, settings, refProp }) => {
           </div>
         </div>
 
-        {/* Valores */}
+        {/* Valores - Ajustados com fonte Mono e Tamanho Ampliado */}
         <div className="bg-indigo-950 text-white rounded-[2rem] p-6 mb-8 relative overflow-hidden print:bg-indigo-950 print:text-white shadow-xl">
           <div className="grid grid-cols-4 gap-4 text-center items-center relative z-10">
             <div className="flex flex-col">
               <p className="text-indigo-300/60 text-[8px] font-black uppercase tracking-widest mb-1.5">Bruto</p>
-              <p className="text-base font-black whitespace-nowrap tabular-nums">{formatCurrency(data.values.serviceValue)}</p>
+              <p className="text-lg font-mono font-black whitespace-nowrap tabular-nums">{formatCurrency(data.values.serviceValue)}</p>
             </div>
             <div className="flex flex-col">
               <p className="text-indigo-300/60 text-[8px] font-black uppercase tracking-widest mb-1.5">Desconto</p>
-              <p className="text-base font-black text-emerald-400 whitespace-nowrap tabular-nums">{formatCurrency(data.values.discount)}</p>
+              <p className="text-lg font-mono font-black text-emerald-400 whitespace-nowrap tabular-nums">{formatCurrency(data.values.discount)}</p>
             </div>
             <div className="flex flex-col">
               <p className="text-indigo-300/60 text-[8px] font-black uppercase tracking-widest mb-1.5">Imp. Retidos</p>
-              <p className="text-base font-black text-rose-300 whitespace-nowrap tabular-nums">{formatCurrency(data.values.taxAmount || 0)}</p>
+              <p className="text-lg font-mono font-black text-rose-300 whitespace-nowrap tabular-nums">{formatCurrency(data.values.taxAmount || 0)}</p>
             </div>
             <div className="bg-white/10 backdrop-blur-md rounded-2xl py-3 px-2 border border-white/10">
               <p className="text-indigo-100 text-[9px] font-black uppercase tracking-widest mb-1">Líquido</p>
-              <p className="text-xl md:text-2xl font-black whitespace-nowrap tabular-nums tracking-tighter leading-none">
+              <p className="text-2xl md:text-3xl font-mono font-black whitespace-nowrap tracking-tighter leading-none">
                 {formatCurrency(data.values.netValue)}
               </p>
             </div>
           </div>
         </div>
 
-        {/* Rodapé - Refinado de acordo com a referência visual */}
+        {/* Rodapé */}
         <footer className="mt-auto border-t-2 border-indigo-50 pt-6 flex flex-col gap-6 relative z-10">
           <div className="flex justify-between items-center gap-8">
             
@@ -147,23 +211,39 @@ export const ModernInvoice: React.FC<Props> = ({ data, settings, refProp }) => {
                  <span className="text-[10px] font-black uppercase tracking-widest">Autenticidade Garantida</span>
               </div>
               <p className="italic font-bold text-gray-300 text-[9px] max-w-[320px] leading-relaxed">
-                Representação visual de dados fiscais (XML/PDF) para fins informativos e organizacionais. Gerado via IA Processamento Inteligente.
+                A autenticidade desta NFS-e pode ser verificada pela leitura deste código QR ou pela consulta da chave de acesso no portal nacional da NFS-e.
               </p>
             </div>
 
-            {/* Centro: QR Code Automático */}
-            <div className="flex flex-col items-center gap-1.5">
-               <div className="p-2 bg-white rounded-2xl shadow-xl border border-indigo-100/50">
+            {/* Centro: QR Code Oficial (Ajustado para 30mm com Efeito Zoom) */}
+            <div className="flex flex-col items-center gap-1.5 no-print">
+               <div className="p-1.5 bg-white rounded-2xl shadow-xl border border-indigo-100/50 flex items-center justify-center overflow-hidden transition-all duration-500 ease-out hover:scale-125 hover:shadow-2xl cursor-zoom-in active:scale-110">
                  <img 
                    src={dynamicQrUrl} 
-                   alt="Autenticidade" 
-                   className="w-16 h-16 object-contain"
+                   alt="Autenticidade NFS-e" 
+                   style={{ width: '30mm', height: '30mm' }}
+                   className="object-contain"
                    onError={(e) => {
                      (e.target as HTMLImageElement).src = 'https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=error';
                    }}
                  />
                </div>
-               <p className="text-[8px] font-black text-indigo-600 uppercase tracking-[0.2em] leading-none">
+               <p className="text-[9px] font-black text-indigo-600 uppercase tracking-[0.3em] leading-none">
+                 VALIDAR
+               </p>
+            </div>
+
+            {/* Versão Impressa do QR Code (sem efeitos) */}
+            <div className="hidden print:flex flex-col items-center gap-1.5">
+               <div className="p-1.5 bg-white rounded-2xl border border-gray-100 flex items-center justify-center">
+                 <img 
+                   src={dynamicQrUrl} 
+                   alt="Autenticidade NFS-e" 
+                   style={{ width: '30mm', height: '30mm' }}
+                   className="object-contain"
+                 />
+               </div>
+               <p className="text-[9px] font-black text-gray-400 uppercase tracking-[0.3em] leading-none">
                  VALIDAR
                </p>
             </div>
@@ -171,7 +251,22 @@ export const ModernInvoice: React.FC<Props> = ({ data, settings, refProp }) => {
             {/* Direita: Campo de Segurança */}
             <div className="text-right min-w-[200px]">
               <p className="mb-2 text-gray-400 text-[9px] font-black uppercase tracking-widest">Segurança SHA-256</p>
-              <div className="bg-indigo-50/50 px-4 py-3 rounded-2xl border border-indigo-100/40 shadow-inner">
+              <div 
+                className="bg-indigo-50/50 px-4 py-3 rounded-2xl border border-indigo-100/40 shadow-inner cursor-pointer hover:bg-indigo-100 transition-all relative group/copy-footer no-print"
+                onClick={() => handleCopy(data.verificationCode, 'verify-bottom')}
+                title="Clique para copiar"
+              >
+                <p className="font-mono text-[10px] text-indigo-700 font-black break-all leading-tight flex items-center justify-between gap-2">
+                  {data.verificationCode?.toUpperCase() || 'AUTENTICAÇÃO-PENDENTE'}
+                  <Copy className="w-3 h-3 opacity-0 group-hover/copy-footer:opacity-100 transition-opacity" />
+                </p>
+                {copiedField === 'verify-bottom' && (
+                  <div className="absolute -top-12 right-0 bg-gray-900 text-white text-[10px] px-3 py-1.5 rounded-xl font-black uppercase tracking-widest shadow-xl animate-pop-in z-50 whitespace-nowrap">
+                    Copiado!
+                  </div>
+                )}
+              </div>
+              <div className="print:block hidden bg-indigo-50/50 px-4 py-3 rounded-2xl border border-indigo-100/40 shadow-inner">
                 <p className="font-mono text-[10px] text-indigo-700 font-black break-all leading-tight">
                   {data.verificationCode?.toUpperCase() || 'AUTENTICAÇÃO-PENDENTE'}
                 </p>

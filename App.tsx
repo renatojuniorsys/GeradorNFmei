@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { FileUpload } from './components/FileUpload';
 import { ModernInvoice } from './components/ModernInvoice';
@@ -25,6 +26,7 @@ const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<TabView>('INVOICE');
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [isPrintingAll, setIsPrintingAll] = useState(false);
+  const [showSuccessFeedback, setShowSuccessFeedback] = useState(false);
 
   // Sound Synthesis Logic
   const playClickSound = () => {
@@ -102,6 +104,11 @@ const App: React.FC = () => {
     }
   };
 
+  const triggerSuccessFeedback = () => {
+    setShowSuccessFeedback(true);
+    setTimeout(() => setShowSuccessFeedback(false), 3000);
+  };
+
   const handlePrintCurrent = () => {
     const originalTitle = document.title;
     if (data && data.number) {
@@ -110,6 +117,7 @@ const App: React.FC = () => {
       document.title = `${type}-${data.number}-${provider}`;
     }
     setIsPrintingAll(false);
+    triggerSuccessFeedback();
     setTimeout(() => {
       window.print();
       document.title = originalTitle;
@@ -123,8 +131,7 @@ const App: React.FC = () => {
       document.title = `COMPLETO-${data.number}-${provider}`;
     }
     setIsPrintingAll(true);
-    // Give react a tick to render the print-only div if we were using state for visibility
-    // Although our CSS handles it via .print-only { display: block !important; } during @media print
+    triggerSuccessFeedback();
     setTimeout(() => {
       window.print();
       document.title = originalTitle;
@@ -136,6 +143,7 @@ const App: React.FC = () => {
     setData(null);
     setState(AppState.UPLOAD);
     setErrorMsg(null);
+    setShowSuccessFeedback(false);
   };
 
   const toggleSettings = () => {
@@ -154,9 +162,9 @@ const App: React.FC = () => {
     <div className="min-h-screen flex flex-col bg-[#f8fafc]">
       <nav className="bg-white border-b border-gray-100 py-3 px-8 flex justify-between items-center no-print sticky top-0 z-50 shadow-sm backdrop-blur-xl bg-white/80">
         <div className="flex items-center gap-3 cursor-pointer select-none transition-transform active:scale-95" onClick={handleReset}>
-          <div className="bg-indigo-600 text-white font-black rounded-2xl p-2.5 text-xl shadow-xl shadow-indigo-100">MEI</div>
+          <div className="bg-indigo-600 text-white font-black rounded-2xl p-2.5 text-xl shadow-xl shadow-indigo-100">NF</div>
           <div>
-            <span className="font-black text-gray-900 text-xl block leading-tight tracking-tighter">Smart Doc</span>
+            <span className="font-black text-gray-900 text-xl block leading-tight tracking-tighter">MEI-GeradorNf</span>
           </div>
         </div>
 
@@ -280,23 +288,23 @@ const App: React.FC = () => {
                </div>
             </div>
 
-            <div className="w-full flex justify-center">
+            <div className="w-full flex justify-center relative">
                {activeTab === 'INVOICE' ? (
-                 <ModernInvoice data={data} settings={settings} />
+                 <ModernInvoice data={data} settings={settings} isSuccess={showSuccessFeedback} />
                ) : (
-                 <ReceiptPreview data={data} settings={settings} />
+                 <ReceiptPreview data={data} settings={settings} isSuccess={showSuccessFeedback} />
                )}
             </div>
           </div>
         )}
 
-        {/* Print only section containing both documents */}
+        {/* Seção de impressão refinada com quebras de página controladas */}
         {data && (
-          <div className="print-only w-[210mm] print:block">
+          <div className="print-only w-[210mm]">
             <div className="page-break">
               <ModernInvoice data={data} settings={settings} />
             </div>
-            <div>
+            <div className="receipt-print-section">
               <ReceiptPreview data={data} settings={settings} />
             </div>
           </div>
@@ -304,7 +312,7 @@ const App: React.FC = () => {
       </main>
 
       <footer className="py-12 text-center text-gray-300 text-[10px] font-black uppercase tracking-[0.5em] no-print">
-        <p>&copy; {new Date().getFullYear()} MEI Smart Doc &bull; Enterprise Edition</p>
+        <p>&copy; {new Date().getFullYear()} MEI-GeradorNf &bull; Enterprise Edition</p>
       </footer>
     </div>
   );

@@ -1,5 +1,6 @@
+
 import React, { useState } from 'react';
-import { User as UserIcon, Lock, ArrowRight, ShieldCheck, UserCog } from 'lucide-react';
+import { User as UserIcon, Lock, ArrowRight, Building2, UserCog } from 'lucide-react';
 import { UserRole, User } from '../types';
 
 interface Props {
@@ -65,9 +66,9 @@ export const LoginScreen: React.FC<Props> = ({ onLogin, users }) => {
              <div className="absolute top-0 left-0 w-full h-full bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10"></div>
              <div className="relative z-10">
                <div className="w-16 h-16 bg-white/20 rounded-2xl mx-auto flex items-center justify-center mb-4 backdrop-blur-md border border-white/30">
-                 <ShieldCheck className="w-8 h-8 text-white" />
+                 <Building2 className="w-8 h-8 text-white" />
                </div>
-               <h1 className="text-2xl font-bold text-white mb-1">MEI Smart Doc</h1>
+               <h1 className="text-2xl font-bold text-white mb-1 tracking-tight">MEI-GeradorNf</h1>
                <p className="text-indigo-200 text-sm">Acesso ao Sistema</p>
              </div>
           </div>
@@ -86,7 +87,7 @@ export const LoginScreen: React.FC<Props> = ({ onLogin, users }) => {
                       : 'text-gray-500 hover:text-gray-700'
                   }`}
                 >
-                  <ShieldCheck className="w-4 h-4" />
+                  <Building2 className="w-4 h-4" />
                   Admin
                 </button>
                 <button
@@ -163,7 +164,7 @@ export const LoginScreen: React.FC<Props> = ({ onLogin, users }) => {
         </div>
         
         <p className="text-center text-gray-400 text-xs mt-6">
-          &copy; {new Date().getFullYear()} MEI Smart Doc. Secure Access.
+          &copy; {new Date().getFullYear()} MEI-GeradorNf. Secure Access.
         </p>
       </div>
     </div>
