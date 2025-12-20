@@ -1,3 +1,4 @@
+
 import { GoogleGenAI, Type } from "@google/genai";
 import { InvoiceData } from "../types";
 
@@ -12,14 +13,7 @@ const parseGeminiResponse = (responseText: string): InvoiceData => {
 };
 
 export const extractInvoiceData = async (fileBase64: string, mimeType: string): Promise<InvoiceData> => {
-  // A variável process.env.API_KEY é substituída pelo valor real pelo Vite durante o build
-  const apiKey = process.env.API_KEY;
-  
-  if (!apiKey) {
-    throw new Error("API_KEY não configurada. Verifique os segredos no painel do Netlify.");
-  }
-
-  const ai = new GoogleGenAI({ apiKey });
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY as string });
 
   const schema = {
     type: Type.OBJECT,
@@ -39,7 +33,8 @@ export const extractInvoiceData = async (fileBase64: string, mimeType: string): 
           state: { type: Type.STRING },
           email: { type: Type.STRING },
           phone: { type: Type.STRING },
-        }
+        },
+        required: ["name", "document"]
       },
       borrower: {
         type: Type.OBJECT,
@@ -51,7 +46,8 @@ export const extractInvoiceData = async (fileBase64: string, mimeType: string): 
           state: { type: Type.STRING },
           email: { type: Type.STRING },
           phone: { type: Type.STRING },
-        }
+        },
+        required: ["name"]
       },
       description: { type: Type.STRING, description: "Texto completo da discriminação do serviço" },
       activityCode: { type: Type.STRING, description: "Código de atividade/serviço" },
@@ -62,7 +58,8 @@ export const extractInvoiceData = async (fileBase64: string, mimeType: string): 
           discount: { type: Type.NUMBER },
           netValue: { type: Type.NUMBER },
           taxAmount: { type: Type.NUMBER }
-        }
+        },
+        required: ["serviceValue", "netValue"]
       }
     },
     required: ["provider", "borrower", "values", "description", "issueDate"]
@@ -70,7 +67,7 @@ export const extractInvoiceData = async (fileBase64: string, mimeType: string): 
 
   try {
     const response = await ai.models.generateContent({
-      model: 'gemini-3-flash-preview',
+      model: 'gemini-3-pro-preview',
       contents: {
         parts: [
           {
@@ -80,22 +77,29 @@ export const extractInvoiceData = async (fileBase64: string, mimeType: string): 
             }
           },
           {
-            text: `Atue como um OCR semântico para NFS-e do Brasil. Extraia os dados seguindo fielmente as regras fiscais. 
-            Datas em YYYY-MM-DD. Valores em float. Campos inexistentes como null. 
-            Não formate documentos (apenas números).`
+            text: `Aja como um especialista em fiscal brasileiro (NFS-e). 
+            Sua tarefa é ler esta Nota Fiscal de Serviço e extrair os dados com precisão absoluta.
+            
+            REGRAS CRÍTICAS:
+            1. IDENTIFICAÇÃO: Não confunda Prestador (quem emite/vende) com Tomador (quem paga/compra).
+            2. NÚMEROS: Remova formatação de CNPJ/CPF e CEP (apenas dígitos).
+            3. VALORES: Use ponto para decimais.
+            4. NULOS: Se um campo não existir, use null em vez de strings vazias ou "null".
+            5. DESCRIÇÃO: Capture todo o texto da seção 'Discriminação dos Serviços'.
+            
+            Pense passo a passo antes de preencher o JSON para garantir que nomes e documentos não fiquem invertidos.`
           }
         ]
       },
       config: {
         responseMimeType: "application/json",
-        responseSchema: schema
+        responseSchema: schema,
+        thinkingConfig: { thinkingBudget: 4096 }
       }
     });
 
     const text = response.text;
-    if (!text) {
-      throw new Error("Resposta vazia da inteligência artificial.");
-    }
+    if (!text) throw new Error("Resposta vazia da IA.");
 
     const data = parseGeminiResponse(text);
 
@@ -104,12 +108,49 @@ export const extractInvoiceData = async (fileBase64: string, mimeType: string): 
     }
 
     return data;
-
   } catch (error: any) {
     console.error("Gemini Error:", error);
-    if (error.message?.includes("API key")) {
-       throw new Error("Erro de autenticação na API do Google. Verifique se a sua chave está ativa e possui créditos/cotas disponíveis.");
-    }
     throw error;
+  }
+};
+
+/**
+ * Generates a professional logo using Gemini 2.5 Flash Image
+ */
+export const generateAiLogo = async (): Promise<string> => {
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY as string });
+
+  const prompt = `Crie um logo profissional e moderno para o aplicativo 'MEI-GeradorNf'. 
+  O logo deve ser inspirado no símbolo oficial da NFS-e brasileira: 
+  1. Deve conter um mapa do Brasil estilizado em tons de azul suave e moderno.
+  2. Um círculo elegante (verde esmeralda ou dourado) com a letra 'e' branca estilizada no centro, cruzando o mapa.
+  3. Estilo 'premium corporate', clean, transmitindo confiança e eficiência tecnológica.
+  4. Fundo branco puro ou transparente. 
+  5. Tipografia minimalista se houver texto.
+  O resultado deve parecer um ícone de aplicativo SaaS de alto nível.`;
+
+  try {
+    const response = await ai.models.generateContent({
+      model: 'gemini-2.5-flash-image',
+      contents: {
+        parts: [{ text: prompt }]
+      },
+      config: {
+        imageConfig: {
+          aspectRatio: "1:1"
+        }
+      }
+    });
+
+    for (const part of response.candidates[0].content.parts) {
+      if (part.inlineData) {
+        return `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`;
+      }
+    }
+    
+    throw new Error("Nenhuma imagem gerada.");
+  } catch (error) {
+    console.error("Logo Generation Error:", error);
+    throw new Error("Falha ao gerar o logo com IA.");
   }
 };

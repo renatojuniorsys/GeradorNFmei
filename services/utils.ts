@@ -1,12 +1,17 @@
+
 /**
  * Formats a currency number to BRL (R$)
  */
 export const formatCurrency = (value: number | undefined | null): string => {
-  if (value === undefined || value === null) return 'R$ 0,00';
+  // Garante que o valor seja um número válido ou 0
+  const amount = (typeof value === 'number' && !isNaN(value)) ? value : 0;
+  
   return new Intl.NumberFormat('pt-BR', {
     style: 'currency',
     currency: 'BRL',
-  }).format(value);
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(amount);
 };
 
 /**

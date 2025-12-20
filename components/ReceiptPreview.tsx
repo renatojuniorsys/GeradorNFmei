@@ -1,175 +1,173 @@
 
 import React from 'react';
-import { InvoiceData, AppSettings } from '../types';
+import { InvoiceData, AppSettings, PdfMargins } from '../types';
 import { formatCurrency, formatDate, formatDocument, numberToWordsPTBR } from '../services/utils';
-import { Scissors, Building2, QrCode, CheckCircle2, PenTool } from 'lucide-react';
+import { Scissors, Building2, CheckCircle2, Move } from 'lucide-react';
 
 interface Props {
   data: InvoiceData;
   settings?: AppSettings;
-  refProp?: React.RefObject<HTMLDivElement>;
   isSuccess?: boolean;
+  isPrinting?: boolean;
+  onUpdateMargins?: (margins: PdfMargins) => void;
 }
 
-export const ReceiptPreview: React.FC<Props> = ({ data, settings, refProp, isSuccess }) => {
-  // Gera o link oficial da NFS-e Nacional para o QR Code do Recibo
+export const ReceiptPreview: React.FC<Props> = ({ 
+  data, 
+  settings, 
+  isSuccess, 
+  isPrinting = false,
+  onUpdateMargins
+}) => {
   const cleanKey = data.accessKey?.replace(/\D/g, '') || '';
   const officialUrl = cleanKey 
     ? `https://www.nfse.gov.br/ConsultaPublica/?tpc=1&chave=${cleanKey}`
     : `https://www.nfse.gov.br/ConsultaPublica/?cod=${data.verificationCode}`;
     
-  const dynamicQrUrl = `https://chart.googleapis.com/chart?cht=qr&chs=200x200&chl=${encodeURIComponent(officialUrl)}`;
+  const dynamicQrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=400x400&data=${encodeURIComponent(officialUrl)}&margin=10&format=png`;
+
+  const margins = settings?.pdfMargins || { top: 40, bottom: 40, left: 40, right: 40 };
+
+  const handleMarginChange = (key: keyof PdfMargins, value: string) => {
+    const numValue = Math.max(0, Math.floor(Number(value)) || 0);
+    if (onUpdateMargins) {
+      onUpdateMargins({ ...margins, [key]: numValue });
+    }
+  };
+
+  // Dimensões A4 rigorosas para evitar overflow no motor de renderização
+  const containerClasses = isPrinting
+    ? "print-container bg-white text-gray-900 w-[794px] h-[1122px] relative flex flex-col box-border border-none overflow-hidden mx-auto shadow-none"
+    : `print-container bg-white text-gray-800 w-[210mm] h-[297mm] max-h-[297mm] shadow-2xl print:shadow-none relative flex flex-col box-border border border-gray-100 print:border-none rounded-[2.5rem] print:rounded-none overflow-hidden origin-top transition-all duration-300
+       scale-[0.6] min-[375px]:scale-[0.65] min-[425px]:scale-[0.7] min-[540px]:scale-[0.75] sm:scale-[0.8] md:scale-[0.9] lg:scale-100
+       mb-[-120mm] min-[375px]:mb-[-105mm] min-[425px]:mb-[-90mm] min-[540px]:mb-[-75mm] sm:mb-[-60mm] md:mb-[-30mm] lg:mb-0
+      `;
+
+  const extenso = numberToWordsPTBR(data.values.netValue).toUpperCase();
 
   return (
-    <div 
-      ref={refProp}
-      className="bg-white p-8 md:p-12 w-full max-w-[210mm] h-[297mm] mx-auto shadow-2xl print:shadow-none print:w-[210mm] print:h-[297mm] print:max-w-none print:mx-0 print:p-8 relative flex flex-col box-border border border-gray-100 print:border-none overflow-hidden"
-    >
-      {/* Success Animation Overlay */}
-      {isSuccess && (
-        <div className="absolute inset-0 z-[100] flex items-center justify-center bg-white/40 backdrop-blur-[2px] animate-fade-in no-print">
-          <div className="bg-white p-12 rounded-[3rem] shadow-2xl border border-emerald-100 flex flex-col items-center gap-6 animate-pop-in">
-             <div className="bg-emerald-500 p-6 rounded-full shadow-lg shadow-emerald-200">
-                <CheckCircle2 className="w-16 h-16 text-white" />
-             </div>
-             <div className="text-center">
-               <h3 className="text-2xl font-black text-gray-900 uppercase tracking-tighter">Documento Gerado!</h3>
-               <p className="text-emerald-600 font-bold text-sm tracking-widest mt-1 uppercase">Pronto para salvar ou imprimir</p>
-             </div>
+    <div className={`relative w-full flex flex-col items-center group max-w-full overflow-x-auto no-scrollbar receipt-container-root ${isPrinting ? 'p-0' : ''}`}>
+      
+      {!isPrinting && (
+        <div className="no-print mb-8 w-full max-w-[210mm] flex flex-col gap-4 px-4 sm:px-0 animate-fade-in">
+          <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center bg-white p-4 sm:p-5 rounded-2xl border border-gray-100 shadow-sm gap-4">
+            <div className="flex items-center gap-3">
+              <div className="bg-indigo-50 p-2.5 rounded-xl text-indigo-600"><Move className="w-5 h-5" /></div>
+              <div>
+                <h4 className="text-[10px] sm:text-xs font-black text-gray-900 uppercase tracking-widest">Ajuste do Recibo</h4>
+                <p className="text-[8px] sm:text-[10px] text-gray-400 font-bold uppercase tracking-widest">Ajuste fino de margens</p>
+              </div>
+            </div>
+            
+            <div className="flex justify-around sm:justify-start gap-3 sm:gap-4">
+              {(['top', 'bottom', 'left', 'right'] as const).map((side) => (
+                <div key={side} className="flex flex-col items-center">
+                  <label className="text-[8px] font-black text-gray-400 uppercase tracking-tighter mb-1">{side}</label>
+                  <input 
+                    type="number" 
+                    min="0"
+                    step="1"
+                    value={margins[side]} 
+                    onChange={(e) => handleMarginChange(side, e.target.value)}
+                    className="w-10 bg-gray-50 border border-gray-100 rounded-lg p-1.5 text-center text-[10px] font-black outline-none focus:ring-1 focus:ring-indigo-300 transition-all"
+                  />
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       )}
 
-      <div className="border-[3px] border-gray-900 p-8 md:p-10 relative flex flex-col flex-grow print:border-gray-900 overflow-hidden">
-        {/* Cut Line Visual - Apenas Tela */}
-        <div className="absolute -left-[3px] -right-[3px] -top-10 flex items-center justify-center text-gray-400 text-[10px] font-black uppercase tracking-[0.3em] no-print">
-          <Scissors className="w-3 h-3 mr-2" /> Recibo de Quitação Profissional
-        </div>
-
-        {/* Receipt Header - Layout Ajustado para Logo (Esquerda) e Título/Valor (Direita) */}
-        <div className="flex justify-between items-start mb-12 border-b-4 border-gray-900 pb-8 min-h-[140px]">
-          
-          {/* Logo - Canto Superior Esquerdo */}
-          <div className="flex items-start max-w-[200px]">
-            {settings?.logoUrl ? (
-              <img 
-                src={settings.logoUrl} 
-                alt="Logo Empresa" 
-                className="max-h-32 w-auto object-contain object-left" 
-              />
-            ) : (
-              <div className="bg-gray-900 text-white p-4 rounded-2xl inline-flex shadow-lg">
-                <Building2 className="w-12 h-12" />
-              </div>
-            )}
+      {isSuccess && !isPrinting && (
+        <div className="absolute inset-0 z-[100] flex items-center justify-center bg-white/40 backdrop-blur-[2px] rounded-[2.5rem] animate-fade-in no-print p-4">
+          <div className="bg-white p-8 sm:p-12 rounded-[2.5rem] sm:rounded-[3rem] shadow-2xl border border-emerald-100 flex flex-col items-center gap-6 animate-pop-in text-center w-full max-w-sm">
+             <div className="bg-emerald-500 p-5 sm:p-6 rounded-full"><CheckCircle2 className="w-12 h-12 sm:w-16 sm:h-16 text-white" /></div>
+             <h3 className="text-xl sm:text-2xl font-black text-gray-900 uppercase">Recibo Pronto!</h3>
           </div>
+        </div>
+      )}
 
-          {/* Título e Valor Total - Alinhados à Direita conforme solicitado */}
-          <div className="flex flex-col items-end gap-6 text-right">
-            <div>
-              <h2 className="text-6xl font-black text-gray-900 tracking-tighter uppercase leading-none">RECIBO</h2>
-              <p className="text-[11px] font-black text-gray-400 uppercase tracking-[0.3em] mt-1">
-                REFERENTE À NF Nº {data.number || '---'}
+      <div 
+        className={containerClasses}
+        style={{ 
+          paddingTop: `${margins.top}px`, 
+          paddingBottom: `${margins.bottom}px`, 
+          paddingLeft: `${margins.left}px`, 
+          paddingRight: `${margins.right}px` 
+        }}
+      >
+        <div className="border-[5px] border-gray-900 p-6 sm:p-10 relative flex flex-col flex-grow box-border h-full overflow-hidden bg-white">
+          <header className="flex justify-between items-start border-b-[5px] border-gray-900 pb-6 mb-6 shrink-0">
+             <div className="max-w-[150px] sm:max-w-[200px]">
+               {settings?.logoUrl ? (
+                 <img src={settings.logoUrl} alt="Logo" className="max-h-16 sm:max-h-24 w-auto object-contain" />
+               ) : (
+                 <div className="bg-gray-900 text-white p-3 rounded-xl shadow-lg"><Building2 className="w-6 h-6 sm:w-8 sm:h-8" /></div>
+               )}
+             </div>
+             <div className="text-right flex flex-col items-end">
+                <h2 className="text-4xl sm:text-6xl font-black text-gray-900 tracking-tighter uppercase leading-none">RECIBO</h2>
+                <p className="text-[9px] sm:text-[10px] font-black text-gray-500 uppercase tracking-widest mt-1">REF. NF Nº {data.number || '00'}</p>
+                
+                <div className="mt-3 py-3 px-6 sm:py-5 sm:px-10 bg-black rounded-[1.5rem] sm:rounded-[2rem] flex flex-col items-center justify-center shadow-xl">
+                  <span className="text-[7px] sm:text-[9px] font-black text-gray-400 uppercase tracking-[0.2em] mb-0.5">Valor Líquido</span>
+                  <span className="text-2xl sm:text-4xl font-black text-white tabular-nums tracking-tighter leading-tight">
+                    {formatCurrency(data.values.netValue)}
+                  </span>
+                </div>
+             </div>
+          </header>
+
+          <div className="space-y-6 sm:space-y-8 text-gray-900 shrink-0">
+            <p className="text-base sm:text-xl leading-snug tracking-tight">
+              Recebemos de <span className="font-black border-b-[3px] sm:border-b-[4px] border-gray-300 px-1 uppercase">{data.borrower.name || '---'}</span>, 
+              inscrito sob o nº <span className="font-mono font-bold bg-gray-50 px-2 py-1 rounded-lg border border-gray-200 text-sm sm:text-base">{formatDocument(data.borrower.document)}</span>, 
+              a importância líquida de:
+            </p>
+            
+            <div className="p-6 sm:p-10 bg-black text-white rounded-[2rem] sm:rounded-[2.5rem] font-black italic text-center leading-tight shadow-lg">
+              <span className={`${extenso.length > 50 ? 'text-lg sm:text-2xl' : 'text-xl sm:text-3xl'} block`}>
+                "{extenso}"
+              </span>
+            </div>
+
+            <div className="p-5 sm:p-7 bg-gray-50/80 rounded-[1.5rem] sm:rounded-[2rem] border-l-[8px] sm:border-l-[12px] border-gray-900 shadow-inner flex-shrink">
+              <p className="text-[8px] sm:text-[10px] font-black text-gray-500 uppercase tracking-[0.2em] mb-2">Serviços Prestados:</p>
+              <p className="italic text-gray-900 text-sm sm:text-lg leading-relaxed font-bold line-clamp-5 overflow-hidden">
+                {data.description || 'Prestação de serviços diversos conforme discriminado na nota fiscal eletrônica.'}
               </p>
             </div>
-            
-            <div className="bg-white border-[3px] border-gray-900 p-5 rounded-2xl min-w-[200px] text-center shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">
-              <p className="text-[10px] text-gray-500 uppercase tracking-widest font-black mb-1">VALOR TOTAL</p>
-              <p className="text-3xl font-black text-gray-900 tabular-nums whitespace-nowrap">
-                {formatCurrency(data.values.netValue)}
-              </p>
-            </div>
-          </div>
-        </div>
-
-        {/* Receipt Body */}
-        <div className="space-y-10 text-xl leading-relaxed text-gray-800 font-medium">
-          <p>
-            Recebemos de <span className="font-black border-b-2 border-gray-300 pb-0.5">{data.borrower.name || '____________________'}</span>, 
-            inscrito(a) no CPF/CNPJ sob o nº <span className="font-mono text-lg font-bold bg-gray-100 px-3 py-1 rounded-lg border border-gray-200">{formatDocument(data.borrower.document) || '________________'}</span>,
-            a importância líquida de:
-          </p>
-
-          <div className="bg-gray-900 text-white p-8 rounded-3xl font-black italic text-2xl shadow-xl print:bg-gray-900 print:text-white leading-tight text-center tracking-tight">
-            "{numberToWordsPTBR(data.values.netValue).toUpperCase()}"
           </div>
 
-          <div className="pt-2">
-            <p className="text-[11px] font-black text-gray-400 uppercase tracking-widest mb-2">REFERENTE AOS SERVIÇOS:</p>
-            <p className="italic text-gray-700 leading-relaxed border-l-8 border-gray-200 pl-6 py-2 text-lg bg-gray-50/30 rounded-r-2xl">
-              {data.description || 'Prestação de serviços diversos conforme discriminado na nota fiscal correspondente.'}
-            </p>
+          <div className="flex-grow min-h-[20px]"></div>
+
+          <div className="mb-6 sm:mb-8 text-right shrink-0">
+            <p className="text-xl sm:text-3xl font-black text-gray-900 tracking-tight">{data.provider.city || 'Cidade'}, {formatDate(data.issueDate)}</p>
           </div>
 
-          <p className="text-lg">
-            Para maior clareza e validade jurídica, firmamos o presente recibo dando plena, rasa e geral quitação do valor acima mencionado.
-          </p>
-        </div>
-
-        {/* Spacer dinâmico */}
-        <div className="flex-grow"></div>
-
-        {/* Date and Place */}
-        <div className="mt-8 text-right">
-          <p className="text-xl font-black text-gray-900">
-            {data.provider.city || 'Cidade'}, {formatDate(data.issueDate)}
-          </p>
-        </div>
-
-        {/* Signature Area com Assinatura Digital */}
-        <div className="mt-10 mb-8 flex flex-col items-center justify-center relative">
-          {settings?.signatureUrl ? (
-            <div className="relative mb-[-1.5rem] flex flex-col items-center">
-              <img 
-                src={settings.signatureUrl} 
-                alt="Assinatura Digital" 
-                className="max-h-24 w-auto object-contain transition-transform hover:scale-105"
-              />
-              <div className="absolute top-0 right-[-2rem] flex items-center gap-1 text-[8px] font-black text-indigo-600 bg-white/80 px-2 py-0.5 rounded-full border border-indigo-100 shadow-sm no-print">
-                <PenTool className="w-3 h-3" /> DIGITAL
-              </div>
-            </div>
-          ) : (
-            <div className="h-20"></div> // Espaçador para assinatura manual
-          )}
-          
-          <div className="w-full max-w-sm border-b-2 border-gray-900 mb-4 opacity-30"></div>
-          <p className="font-black text-2xl text-gray-900 uppercase tracking-tight text-center">{data.provider.name}</p>
-          <p className="text-xs font-bold text-gray-500 tracking-widest mt-1 uppercase">CNPJ: {formatDocument(data.provider.document)}</p>
-          <p className="text-[10px] text-gray-400 mt-4 uppercase font-black tracking-[0.5em]">Assinatura do Emitente</p>
-        </div>
-
-        {/* Footer Brand & QR Section - QR Code dinâmico apontando para portal oficial se não houver upload */}
-        <div className="mt-auto flex justify-between items-end pt-8 border-t-2 border-gray-900">
-          <div className="flex flex-col gap-4 max-w-[50%]">
-            <div className="text-[9px] font-black text-gray-400 uppercase tracking-[0.3em] leading-relaxed">
-               ESTE DOCUMENTO POSSUI VALIDADE JURÍDICA QUANDO ACOMPANHADO DA NOTA FISCAL ELETRÔNICA CORRESPONDENTE.
-            </div>
-            
-            <div className="flex flex-col gap-1">
-               <p className="text-[8px] font-black text-gray-900 uppercase leading-none tracking-widest">AUTENTICIDADE DO DOCUMENTO</p>
-               <p className="font-mono text-[11px] text-indigo-600 font-black bg-indigo-50 px-2 py-1 rounded-lg self-start">
-                 {data.verificationCode?.toUpperCase() || 'HASH-SECURITY-2025'}
-               </p>
+          <div className="flex flex-col items-center mb-6 sm:mb-8 shrink-0">
+            <div className="relative w-full max-w-md sm:max-w-xl flex flex-col items-center">
+              {settings?.signatureUrl && (
+                <img 
+                  src={settings.signatureUrl} 
+                  alt="Sign" 
+                  className="max-h-16 sm:max-h-24 mb-[-10px] sm:mb-[-15px] w-auto relative z-10 grayscale opacity-95" 
+                />
+              )}
+              <div className="w-full border-b-[3px] sm:border-b-[4px] border-gray-900 mb-4 sm:mb-6"></div>
+              <p className="text-lg sm:text-2xl font-black text-gray-900 uppercase truncate max-w-full px-4 text-center tracking-tighter leading-none">{data.provider.name}</p>
+              <p className="text-[9px] sm:text-[11px] font-bold text-gray-500 uppercase tracking-[0.3em] mt-1.5">CNPJ: {formatDocument(data.provider.document)}</p>
             </div>
           </div>
-          
-          <div className="flex flex-col items-center gap-2">
-            <div className="p-2 border-2 border-white rounded-2xl bg-white shadow-lg overflow-hidden flex items-center justify-center bg-white">
-              <img 
-                src={settings?.qrCodeUrl || dynamicQrUrl} 
-                alt="QR Code Validação Oficial" 
-                className="w-[113px] h-[113px] object-contain" 
-                style={{ width: '30mm', height: '30mm' }}
-                onError={(e) => {
-                  (e.target as HTMLImageElement).src = 'https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=error';
-                }}
-              />
+
+          <footer className="pt-4 sm:pt-6 border-t-[3px] sm:border-t-[4px] border-gray-900 flex justify-between items-end shrink-0">
+            <div className="text-[8px] sm:text-[10px] font-black text-gray-500 uppercase tracking-[0.1em] max-w-[300px] sm:max-w-[450px] leading-tight">
+              ESTE RECIBO POSSUI VALIDADE JURÍDICA COMPLEMENTAR À NFS-E DIGITAL PARA FINS DE QUITAÇÃO DE OBRIGAÇÕES FINANCEIRAS ENTRE AS PARTES.
             </div>
-            <p className="text-[9px] font-black text-gray-900 uppercase tracking-tight text-center max-w-[150px] leading-tight italic">
-              Escaneie para validação ou pagamento via PIX
-            </p>
-          </div>
+            <div className="p-1 sm:p-1.5 border-[2px] sm:border-[3px] border-gray-900 rounded-xl sm:rounded-2xl bg-white flex items-center justify-center">
+              <img src={dynamicQrUrl} alt="QR" style={{ width: isPrinting ? '32mm' : '24mm', height: isPrinting ? '32mm' : '24mm' }} className="object-contain" />
+            </div>
+          </footer>
         </div>
       </div>
     </div>

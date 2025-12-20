@@ -30,6 +30,13 @@ export interface InvoiceData {
   activityCode: string | null;
   
   values: InvoiceValues;
+  annotations?: string; // Base64 image data of the canvas layer
+}
+
+export interface HistoryItem {
+  id: string;
+  timestamp: number;
+  data: InvoiceData;
 }
 
 export enum AppState {
@@ -37,7 +44,8 @@ export enum AppState {
   PROCESSING = 'PROCESSING',
   PREVIEW = 'PREVIEW',
   ERROR = 'ERROR',
-  SETTINGS = 'SETTINGS'
+  SETTINGS = 'SETTINGS',
+  HISTORY = 'HISTORY'
 }
 
 export type TabView = 'INVOICE' | 'RECEIPT';
@@ -52,8 +60,16 @@ export interface User {
   role: UserRole;
 }
 
+export interface PdfMargins {
+  top: number;
+  bottom: number;
+  left: number;
+  right: number;
+}
+
 export interface AppSettings {
   logoUrl: string | null;
   qrCodeUrl: string | null;
   signatureUrl: string | null;
+  pdfMargins?: PdfMargins;
 }
