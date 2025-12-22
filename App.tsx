@@ -145,9 +145,23 @@ const App: React.FC = () => {
         setState(AppState.PREVIEW);
         showNotification('SUCCESS', 'Documento processado com sucesso!');
       } catch (err: any) {
-        setErrorMsg(err.message || "Não foi possível processar o documento.");
+        let finalMessage = "Não foi possível processar o documento.";
+        
+        // Tenta parsear erro da API do Gemini (que muitas vezes vem como string JSON)
+        try {
+          const parsedError = typeof err.message === 'string' ? JSON.parse(err.message) : err;
+          if (parsedError.error?.code === 403) {
+            finalMessage = "Erro de Autenticação: A chave de API expirou ou foi bloqueada. Contate o administrador.";
+          } else if (parsedError.error?.message) {
+            finalMessage = `Erro na Extração: ${parsedError.error.message}`;
+          }
+        } catch (e) {
+          finalMessage = err.message || finalMessage;
+        }
+
+        setErrorMsg(finalMessage);
         setState(AppState.ERROR);
-        showNotification('ERROR', 'Erro ao ler o documento enviado.');
+        showNotification('ERROR', 'Falha na comunicação com a IA.');
       }
     };
     reader.readAsDataURL(file);
@@ -447,9 +461,9 @@ const App: React.FC = () => {
         {state === AppState.ERROR && (
           <div className="mt-20 w-full max-w-md animate-pop-in bg-white p-10 rounded-[2.5rem] border border-red-100 shadow-2xl text-center">
             <div className="bg-red-50 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6"><AlertTriangle className="w-10 h-10 text-red-500" /></div>
-            <h2 className="text-2xl font-black text-gray-900 uppercase mb-4">Erro Crítico</h2>
+            <h2 className="text-2xl font-black text-gray-900 uppercase mb-4">Problema Encontrado</h2>
             <p className="text-gray-500 font-bold text-sm mb-8 leading-relaxed px-4">{errorMsg}</p>
-            <button onClick={handleReset} className="w-full bg-gray-900 text-white py-4 rounded-2xl font-black uppercase text-xs tracking-widest shadow-xl active:scale-95">Reiniciar</button>
+            <button onClick={handleReset} className="w-full bg-gray-900 text-white py-4 rounded-2xl font-black uppercase text-xs tracking-widest shadow-xl active:scale-95">Tentar Novamente</button>
           </div>
         )}
 
