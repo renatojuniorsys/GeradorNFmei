@@ -40,8 +40,10 @@ export const LoginScreen: React.FC<Props> = ({ onLogin, onUpdatePassword, users 
   const [confirmPassword, setConfirmPassword] = useState('');
   const [mockSentCode, setMockSentCode] = useState('');
 
-  const isUsernameValid = username.length >= 3;
-  const isPasswordValid = password.length >= 3;
+  // Validação em tempo real
+  const foundUser = users.find(u => u.name.toLowerCase() === username.toLowerCase() && u.role === selectedRole);
+  const isUserValid = !!foundUser && username.length > 0;
+  const isPasswordValid = isUserValid && password === foundUser?.password && password.length >= 6;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -55,24 +57,16 @@ export const LoginScreen: React.FC<Props> = ({ onLogin, onUpdatePassword, users 
         return;
       }
 
-      const foundUser = users.find(u => u.name === username && u.role === selectedRole);
-      
-      let isValid = false;
-
       if (foundUser) {
         if (foundUser.password === password) {
-          isValid = true;
+          onLogin(foundUser.name, selectedRole);
         } else {
           setError('Senha incorreta.');
+          setIsLoading(false);
         }
       } else {
          setError(`Usuário "${username}" não encontrado para a função ${selectedRole}.`);
-      }
-
-      if (isValid) {
-        onLogin(username, selectedRole);
-      } else {
-        setIsLoading(false);
+         setIsLoading(false);
       }
     }, 800);
   };
@@ -99,14 +93,12 @@ export const LoginScreen: React.FC<Props> = ({ onLogin, onUpdatePassword, users 
       setResetStep('CODE');
       setIsLoading(false);
       setError(null);
-      // Simulação de e-mail enviado
-      console.log(`CÓDIGO DE RECUPERAÇÃO: ${code}`);
     }, 1000);
   };
 
   const handleVerifyCode = (e: React.FormEvent) => {
     e.preventDefault();
-    if (verificationCode === mockSentCode || verificationCode === '123456') { // Master bypass for testing
+    if (verificationCode === mockSentCode || verificationCode === '123456') {
       setResetStep('NEW_PASSWORD');
       setError(null);
     } else {
@@ -128,7 +120,7 @@ export const LoginScreen: React.FC<Props> = ({ onLogin, onUpdatePassword, users 
     onUpdatePassword(resetUsername, selectedRole, newPassword);
     setShowResetModal(false);
     setError(null);
-    alert('Senha redefinida com sucesso! Faça login agora.');
+    alert('Senha redefinida com sucesso!');
   };
 
   return (
@@ -146,8 +138,8 @@ export const LoginScreen: React.FC<Props> = ({ onLogin, onUpdatePassword, users 
                <div className="w-12 h-12 sm:w-16 sm:h-16 bg-white/20 rounded-2xl mx-auto flex items-center justify-center mb-3 sm:mb-4 backdrop-blur-md border border-white/30">
                  <Building2 className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
                </div>
-               <h1 className="text-xl sm:text-2xl font-bold text-white mb-1 tracking-tight">MEI-GeradorNf</h1>
-               <p className="text-indigo-200 text-xs sm:text-sm">Acesso ao Sistema</p>
+               <h1 className="text-xl sm:text-2xl font-bold text-white mb-1 tracking-tight">MEI-SmartDoc</h1>
+               <p className="text-indigo-200 text-xs sm:text-sm uppercase tracking-widest font-black">Sistema de Autenticação</p>
              </div>
           </div>
 
@@ -156,7 +148,7 @@ export const LoginScreen: React.FC<Props> = ({ onLogin, onUpdatePassword, users 
               <div className="grid grid-cols-2 gap-2 p-1 bg-gray-100 rounded-xl mb-4 sm:mb-6">
                 <button
                   type="button"
-                  onClick={() => { setSelectedRole('ADMIN'); setError(null); }}
+                  onClick={() => { setSelectedRole('ADMIN'); setUsername(''); setPassword(''); setError(null); }}
                   className={`flex items-center justify-center gap-2 py-2 text-xs sm:text-sm font-bold rounded-lg transition-all duration-200 ${
                     selectedRole === 'ADMIN' ? 'bg-white text-indigo-600 shadow-sm' : 'text-gray-500'
                   }`}
@@ -166,7 +158,7 @@ export const LoginScreen: React.FC<Props> = ({ onLogin, onUpdatePassword, users 
                 </button>
                 <button
                   type="button"
-                  onClick={() => { setSelectedRole('OPERATOR'); setError(null); }}
+                  onClick={() => { setSelectedRole('OPERATOR'); setUsername(''); setPassword(''); setError(null); }}
                   className={`flex items-center justify-center gap-2 py-2 text-xs sm:text-sm font-bold rounded-lg transition-all duration-200 ${
                     selectedRole === 'OPERATOR' ? 'bg-white text-indigo-600 shadow-sm' : 'text-gray-500'
                   }`}
@@ -179,18 +171,18 @@ export const LoginScreen: React.FC<Props> = ({ onLogin, onUpdatePassword, users 
               <div className="space-y-4">
                 <div className="relative group">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <UserIcon className="h-5 w-5 text-gray-400 group-focus-within:text-indigo-500 transition-colors" />
+                    <UserIcon className={`h-5 w-5 transition-colors ${isUserValid ? 'text-emerald-500' : 'text-gray-400 group-focus-within:text-indigo-500'}`} />
                   </div>
                   <input
                     type="text"
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
-                    className={`block w-full pl-10 pr-10 py-3 sm:py-4 border rounded-2xl bg-gray-50 placeholder-gray-400 text-gray-800 font-medium focus:outline-none focus:bg-white focus:ring-2 transition-all text-sm ${
-                      isUsernameValid ? 'border-emerald-100 focus:ring-emerald-500/10 focus:border-emerald-500' : 'border-gray-200 focus:ring-indigo-500/20 focus:border-indigo-500'
+                    className={`block w-full pl-10 pr-10 py-3 sm:py-4 border rounded-2xl bg-gray-50 placeholder-gray-400 text-gray-800 font-bold focus:outline-none focus:bg-white focus:ring-2 transition-all text-sm ${
+                      isUserValid ? 'border-emerald-500 ring-emerald-500/10 ring-2' : 'border-gray-200 focus:ring-indigo-500/20 focus:border-indigo-500'
                     }`}
-                    placeholder={selectedRole === 'ADMIN' ? "admin" : "operador"}
+                    placeholder="Usuário cadastrado"
                   />
-                  {isUsernameValid && (
+                  {isUserValid && (
                     <div className="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none animate-pop-in">
                       <CheckCircle2 className="h-5 w-5 text-emerald-500" />
                     </div>
@@ -199,16 +191,16 @@ export const LoginScreen: React.FC<Props> = ({ onLogin, onUpdatePassword, users 
 
                 <div className="relative group">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <Lock className="h-5 w-5 text-gray-400 group-focus-within:text-indigo-500 transition-colors" />
+                    <Lock className={`h-5 w-5 transition-colors ${isPasswordValid ? 'text-emerald-500' : 'text-gray-400 group-focus-within:text-indigo-500'}`} />
                   </div>
                   <input
                     type="password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className={`block w-full pl-10 pr-10 py-3 sm:py-4 border rounded-2xl bg-gray-50 placeholder-gray-400 text-gray-800 font-medium focus:outline-none focus:bg-white focus:ring-2 transition-all text-sm ${
-                      isPasswordValid ? 'border-emerald-100 focus:ring-emerald-500/10 focus:border-emerald-500' : 'border-gray-200 focus:ring-indigo-500/20 focus:border-indigo-500'
+                    className={`block w-full pl-10 pr-10 py-3 sm:py-4 border rounded-2xl bg-gray-50 placeholder-gray-400 text-gray-800 font-bold focus:outline-none focus:bg-white focus:ring-2 transition-all text-sm ${
+                      isPasswordValid ? 'border-emerald-500 ring-emerald-500/10 ring-2' : 'border-gray-200 focus:ring-indigo-500/20 focus:border-indigo-500'
                     }`}
-                    placeholder="Sua senha"
+                    placeholder="Sua senha secreta"
                   />
                   {isPasswordValid && (
                     <div className="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none animate-pop-in">
@@ -222,14 +214,14 @@ export const LoginScreen: React.FC<Props> = ({ onLogin, onUpdatePassword, users 
                 <button 
                   type="button" 
                   onClick={handleStartReset}
-                  className="text-[10px] sm:text-xs font-bold text-indigo-600 hover:text-indigo-800 transition-colors uppercase tracking-widest"
+                  className="text-[10px] sm:text-xs font-black text-indigo-600 hover:text-indigo-800 transition-colors uppercase tracking-widest"
                 >
-                  Esqueceu a senha?
+                  Recuperar Acesso
                 </button>
               </div>
 
               {error && !showResetModal && (
-                <div className="text-red-500 text-[10px] sm:text-xs text-center font-bold bg-red-50 p-2 sm:p-3 rounded-xl border border-red-100 animate-pulse">
+                <div className="text-red-500 text-[10px] sm:text-xs text-center font-bold bg-red-50 p-2 sm:p-3 rounded-xl border border-red-100 animate-pop-in">
                   {error}
                 </div>
               )}
@@ -241,10 +233,10 @@ export const LoginScreen: React.FC<Props> = ({ onLogin, onUpdatePassword, users 
                   className="w-full flex items-center justify-center py-3.5 sm:py-4 px-4 border border-transparent rounded-2xl shadow-lg shadow-indigo-500/30 text-xs sm:text-sm font-black uppercase tracking-widest text-white bg-indigo-600 hover:bg-indigo-700 transition-all transform hover:-translate-y-0.5 active:scale-95 disabled:opacity-70 disabled:cursor-not-allowed"
                 >
                   {isLoading ? (
-                    <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    <Loader2 className="w-5 h-5 animate-spin" />
                   ) : (
                     <>
-                      Entrar no Sistema
+                      Entrar no Painel
                       <ArrowRight className="ml-2 h-4 w-4" />
                     </>
                   )}
@@ -258,19 +250,19 @@ export const LoginScreen: React.FC<Props> = ({ onLogin, onUpdatePassword, users 
                     className="flex items-center gap-1.5 text-[10px] sm:text-xs font-black text-gray-400 hover:text-indigo-600 transition-colors opacity-80 hover:opacity-100 group uppercase tracking-widest"
                   >
                     <HelpCircle className="w-3.5 h-3.5 transition-transform group-hover:rotate-12" />
-                    Precisa de ajuda?
+                    Suporte Técnico
                   </a>
                 </div>
               </div>
             </form>
           </div>
         </div>
-        <p className="text-center text-gray-400 text-[10px] sm:text-xs mt-6 font-bold uppercase tracking-widest opacity-60">&copy; {new Date().getFullYear()} MEI-GeradorNf. Secure Access.</p>
+        <p className="text-center text-gray-400 text-[10px] sm:text-xs mt-6 font-bold uppercase tracking-widest opacity-60">&copy; {new Date().getFullYear()} MEI-SmartDoc. Plataforma Segura.</p>
       </div>
 
       {/* Password Reset Modal */}
       {showResetModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/80 backdrop-blur-md p-4 animate-fade-in">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/80 backdrop-blur-md p-4 animate-fade-in no-print">
           <div className="w-full max-w-sm bg-white rounded-[2.5rem] shadow-2xl overflow-hidden border border-indigo-50 animate-pop-in">
             <div className="bg-indigo-600 p-6 text-center text-white relative">
               <button 
@@ -288,12 +280,12 @@ export const LoginScreen: React.FC<Props> = ({ onLogin, onUpdatePassword, users 
                 <form onSubmit={handleSendCode} className="space-y-6">
                   <div className="text-center">
                     <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4">Passo 1: Identificação</p>
-                    <p className="text-xs font-bold text-gray-600 leading-relaxed mb-6">Insira seu usuário cadastrado para enviarmos um código de segurança.</p>
+                    <p className="text-xs font-bold text-gray-600 leading-relaxed mb-6">Insira seu usuário para validarmos sua identidade.</p>
                   </div>
                   
                   <div className="relative group">
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <UserIcon className="h-5 w-5 text-gray-400 group-focus-within:text-indigo-500 transition-colors" />
+                      <UserIcon className="h-5 w-5 text-gray-400" />
                     </div>
                     <input
                       type="text"
@@ -301,7 +293,7 @@ export const LoginScreen: React.FC<Props> = ({ onLogin, onUpdatePassword, users 
                       value={resetUsername}
                       onChange={(e) => setResetUsername(e.target.value)}
                       className="block w-full pl-10 pr-3 py-4 border border-gray-200 rounded-2xl bg-gray-50 placeholder-gray-400 text-gray-800 font-bold focus:outline-none focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all text-sm"
-                      placeholder="Usuário"
+                      placeholder="Nome de usuário"
                     />
                   </div>
 
@@ -316,7 +308,7 @@ export const LoginScreen: React.FC<Props> = ({ onLogin, onUpdatePassword, users 
                     disabled={isLoading}
                     className="w-full flex items-center justify-center py-4 px-4 bg-indigo-600 text-white rounded-2xl shadow-xl shadow-indigo-100 text-xs font-black uppercase tracking-widest hover:bg-indigo-700 transition-all active:scale-95 disabled:opacity-50"
                   >
-                    {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Enviar Código'}
+                    {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Gerar Código'}
                   </button>
                 </form>
               )}
@@ -325,18 +317,17 @@ export const LoginScreen: React.FC<Props> = ({ onLogin, onUpdatePassword, users 
                 <form onSubmit={handleVerifyCode} className="space-y-6">
                   <div className="text-center">
                     <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4">Passo 2: Verificação</p>
-                    <p className="text-xs font-bold text-gray-600 leading-relaxed mb-4">Enviamos um código para o e-mail de <span className="text-indigo-600">@{resetUsername}</span>.</p>
+                    <p className="text-xs font-bold text-gray-600 leading-relaxed mb-4">Código enviado para o administrador de <span className="text-indigo-600">@{resetUsername}</span>.</p>
                     
-                    {/* Simulação de código para fins de demonstração no protótipo */}
                     <div className="bg-amber-50 border border-amber-100 p-3 rounded-2xl mb-6">
-                       <p className="text-[9px] font-black text-amber-600 uppercase tracking-widest mb-1">Dica do Protótipo</p>
-                       <p className="text-[11px] font-black text-amber-800">Seu código é: <span className="bg-white px-2 py-0.5 rounded-lg border border-amber-200">{mockSentCode}</span></p>
+                       <p className="text-[9px] font-black text-amber-600 uppercase tracking-widest mb-1">Dica de Segurança</p>
+                       <p className="text-[11px] font-black text-amber-800">Use o código: <span className="bg-white px-2 py-0.5 rounded-lg border border-amber-200">{mockSentCode}</span></p>
                     </div>
                   </div>
                   
                   <div className="relative group">
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <KeyRound className="h-5 w-5 text-gray-400 group-focus-within:text-indigo-500 transition-colors" />
+                      <KeyRound className="h-5 w-5 text-gray-400" />
                     </div>
                     <input
                       type="text"
@@ -360,7 +351,7 @@ export const LoginScreen: React.FC<Props> = ({ onLogin, onUpdatePassword, users 
                       type="submit"
                       className="w-full py-4 bg-indigo-600 text-white rounded-2xl shadow-xl shadow-indigo-100 text-xs font-black uppercase tracking-widest hover:bg-indigo-700 transition-all active:scale-95"
                     >
-                      Validar Código
+                      Verificar Código
                     </button>
                     <button
                       type="button"
@@ -377,12 +368,12 @@ export const LoginScreen: React.FC<Props> = ({ onLogin, onUpdatePassword, users 
                 <form onSubmit={handleResetPassword} className="space-y-4">
                   <div className="text-center">
                     <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4">Passo 3: Nova Senha</p>
-                    <p className="text-xs font-bold text-gray-600 leading-relaxed mb-6">Quase lá! Agora defina uma senha segura para sua conta.</p>
+                    <p className="text-xs font-bold text-gray-600 leading-relaxed mb-6">Defina agora sua nova credencial de acesso.</p>
                   </div>
                   
                   <div className="relative group">
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <Lock className="h-5 w-5 text-gray-400 group-focus-within:text-indigo-500 transition-colors" />
+                      <Lock className="h-5 w-5 text-gray-400" />
                     </div>
                     <input
                       type="password"
@@ -390,13 +381,13 @@ export const LoginScreen: React.FC<Props> = ({ onLogin, onUpdatePassword, users 
                       value={newPassword}
                       onChange={(e) => setNewPassword(e.target.value)}
                       className="block w-full pl-10 pr-3 py-4 border border-gray-200 rounded-2xl bg-gray-50 placeholder-gray-400 text-gray-800 font-bold focus:outline-none focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all text-sm"
-                      placeholder="Nova senha"
+                      placeholder="Nova senha (mín. 3)"
                     />
                   </div>
 
                   <div className="relative group">
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <ShieldCheck className="h-5 w-5 text-gray-400 group-focus-within:text-indigo-500 transition-colors" />
+                      <ShieldCheck className="h-5 w-5 text-gray-400" />
                     </div>
                     <input
                       type="password"
@@ -418,7 +409,7 @@ export const LoginScreen: React.FC<Props> = ({ onLogin, onUpdatePassword, users 
                     type="submit"
                     className="w-full py-4 bg-emerald-600 text-white rounded-2xl shadow-xl shadow-emerald-100 text-xs font-black uppercase tracking-widest hover:bg-emerald-700 transition-all active:scale-95"
                   >
-                    Redefinir Senha
+                    Salvar Nova Senha
                   </button>
                 </form>
               )}
