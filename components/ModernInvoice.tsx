@@ -235,19 +235,27 @@ export const ModernInvoice: React.FC<Props> = ({
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6 mb-8">
             <div className="p-4 sm:p-5 bg-gray-50/60 rounded-xl border border-gray-100">
               <span className={labelStyle}>Serviços</span>
-              <span className="text-[14px] sm:text-[15px] font-black text-gray-900">{formatCurrency(data.values.serviceValue)}</span>
+              <InfoTooltip content={formatCurrency(data.values.serviceValue)}>
+                <span className="text-[14px] sm:text-[15px] font-black text-gray-900 cursor-help">{formatCurrency(data.values.serviceValue)}</span>
+              </InfoTooltip>
             </div>
             <div className="p-4 sm:p-5 bg-gray-50/60 rounded-xl border border-gray-100">
               <span className={labelStyle}>Deduções</span>
-              <span className="text-[14px] sm:text-[15px] font-black text-gray-900">{formatCurrency(data.values.discount || 0)}</span>
+              <InfoTooltip content={formatCurrency(data.values.discount || 0)}>
+                <span className="text-[14px] sm:text-[15px] font-black text-gray-900 cursor-help">{formatCurrency(data.values.discount || 0)}</span>
+              </InfoTooltip>
             </div>
             <div className="p-4 sm:p-5 bg-gray-50/60 rounded-xl border border-gray-100">
               <span className={labelStyle}>Base Cálc.</span>
-              <span className="text-[14px] sm:text-[15px] font-black text-gray-900">{formatCurrency(data.values.serviceValue)}</span>
+              <InfoTooltip content={formatCurrency(data.values.serviceValue)}>
+                <span className="text-[14px] sm:text-[15px] font-black text-gray-900 cursor-help">{formatCurrency(data.values.serviceValue)}</span>
+              </InfoTooltip>
             </div>
             <div className="p-4 sm:p-6 bg-indigo-600 rounded-2xl sm:rounded-3xl shadow-lg flex flex-col justify-center">
               <span className="text-[8px] sm:text-[10px] font-black text-indigo-100 uppercase tracking-widest mb-1 opacity-90">Valor Líquido</span>
-              <span className="text-xl sm:text-2xl font-black text-white tabular-nums tracking-tighter leading-none">{formatCurrency(data.values.netValue)}</span>
+              <InfoTooltip content={formatCurrency(data.values.netValue)}>
+                <span className="text-xl sm:text-2xl font-black text-white tabular-nums tracking-tighter leading-none cursor-help">{formatCurrency(data.values.netValue)}</span>
+              </InfoTooltip>
             </div>
           </div>
 

@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { User, AppSettings, UserRole, HistoryItem } from '../types';
-import { Trash2, Upload, ImageIcon, QrCode, PenTool, MousePointer2, Sparkles, Loader2, X, UserCog, UserPlus, Shield, Database, Download, AlertCircle } from 'lucide-react';
+import { Trash2, Upload, ImageIcon, QrCode, PenTool, MousePointer2, Sparkles, Loader2, X, UserCog, UserPlus, Shield, Database, Download, AlertCircle, ArrowLeft } from 'lucide-react';
 import { SignaturePad } from './SignaturePad';
 import { generateAiLogo } from '../services/geminiService';
 
@@ -68,7 +68,6 @@ export const SettingsScreen: React.FC<Props> = ({ users, setUsers, settings, set
     }
   };
 
-  // BACKUP LOGIC
   const handleExportBackup = () => {
     const backupData = {
       version: "1.0",
@@ -103,7 +102,6 @@ export const SettingsScreen: React.FC<Props> = ({ users, setUsers, settings, set
             setSettings(json.data.settings);
             setHistory(json.data.history);
             
-            // Force save to localstorage and refresh to ensure consistency
             localStorage.setItem('app_users', JSON.stringify(json.data.users));
             localStorage.setItem('app_settings', JSON.stringify(json.data.settings));
             localStorage.setItem('invoice_history', JSON.stringify(json.data.history));
@@ -133,9 +131,8 @@ export const SettingsScreen: React.FC<Props> = ({ users, setUsers, settings, set
           <h2 className="text-xl sm:text-3xl font-black text-white uppercase leading-none">Configurações</h2>
           <p className="text-gray-400 text-[9px] font-bold uppercase tracking-widest mt-1">Gestão da plataforma</p>
         </div>
-        <button onClick={onClose} className="bg-white/10 hover:bg-white/20 text-white p-2 sm:px-6 sm:py-2.5 rounded-xl text-[10px] font-black uppercase transition-all">
-          <span className="hidden sm:inline">Fechar</span>
-          <X className="w-4 h-4 sm:hidden" />
+        <button onClick={onClose} className="bg-white/10 hover:bg-white/20 text-white flex items-center gap-2 px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all">
+          <ArrowLeft className="w-3.5 h-3.5" /> Voltar
         </button>
       </div>
 

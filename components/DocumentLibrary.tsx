@@ -16,7 +16,8 @@ import {
   ChevronRight,
   Maximize2,
   ChevronLeft as ChevronLeftIcon,
-  ChevronRight as ChevronRightIcon
+  ChevronRight as ChevronRightIcon,
+  ArrowLeft
 } from 'lucide-react';
 import { HistoryItem, AppSettings } from '../types';
 import { formatDate, formatCurrency } from '../services/utils';
@@ -36,7 +37,6 @@ export const DocumentLibrary: React.FC<Props> = ({ items, settings, onView, onDe
   const [currentPage, setCurrentPage] = useState(1);
   const ITEMS_PER_PAGE = 12;
 
-  // Reset pagination on search
   useEffect(() => {
     setCurrentPage(1);
   }, [searchTerm]);
@@ -121,9 +121,9 @@ export const DocumentLibrary: React.FC<Props> = ({ items, settings, onView, onDe
 
           <button 
             onClick={onClose}
-            className="p-3.5 bg-gray-900 text-white rounded-2xl hover:bg-black transition-all shadow-xl active:scale-95"
+            className="flex items-center gap-2 px-5 py-3.5 bg-gray-900 text-white rounded-2xl hover:bg-black transition-all shadow-xl font-black text-[10px] uppercase tracking-widest active:scale-95"
           >
-            <ChevronLeft className="w-5 h-5" />
+            <ArrowLeft className="w-4 h-4" /> Voltar
           </button>
         </div>
       </div>
@@ -200,7 +200,6 @@ export const DocumentLibrary: React.FC<Props> = ({ items, settings, onView, onDe
             ))}
           </div>
 
-          {/* Paginação */}
           {totalPages > 1 && (
             <div className="mt-12 flex flex-col items-center gap-4 px-4 pb-10">
               <div className="flex items-center gap-2">
@@ -245,19 +244,14 @@ export const DocumentLibrary: React.FC<Props> = ({ items, settings, onView, onDe
         </>
       )}
 
-      {/* Modal de Visualização Rápida (Quick View) */}
       {selectedPreview && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 no-print">
-          {/* Backdrop com Blur */}
           <div 
             className="absolute inset-0 bg-gray-900/60 backdrop-blur-md animate-fade-in"
             onClick={() => setSelectedPreview(null)}
           />
           
-          {/* Modal Content */}
           <div className="relative w-full max-w-4xl max-h-[90vh] bg-gray-50 rounded-[2.5rem] shadow-2xl flex flex-col overflow-hidden animate-pop-in">
-            
-            {/* Header Fixo */}
             <div className="bg-white px-6 py-4 border-b border-gray-200 flex items-center justify-between shrink-0">
               <div className="flex items-center gap-3">
                 <div className="bg-indigo-600 p-2 rounded-lg text-white">
@@ -277,7 +271,6 @@ export const DocumentLibrary: React.FC<Props> = ({ items, settings, onView, onDe
               </button>
             </div>
 
-            {/* Área de Preview Rolável */}
             <div className="flex-grow overflow-y-auto p-4 sm:p-8 no-scrollbar flex flex-col items-center">
               <div className="w-full transform scale-[0.7] sm:scale-100 origin-top">
                 <ReceiptPreview 
@@ -287,7 +280,6 @@ export const DocumentLibrary: React.FC<Props> = ({ items, settings, onView, onDe
               </div>
             </div>
 
-            {/* Footer de Ações */}
             <div className="bg-white p-4 border-t border-gray-100 flex flex-col sm:flex-row gap-3 items-center justify-between">
               <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">Clique em "Editor Completo" para imprimir ou ajustar margens.</p>
               <div className="flex gap-2 w-full sm:w-auto">

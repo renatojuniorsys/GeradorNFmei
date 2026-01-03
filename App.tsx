@@ -29,7 +29,10 @@ import {
   XCircle,
   CheckCircle2,
   Info,
-  Database
+  Database,
+  ArrowLeft,
+  LayoutGrid,
+  ChevronRight
 } from 'lucide-react';
 import { InfoTooltip } from './components/InfoTooltip';
 
@@ -147,7 +150,6 @@ const App: React.FC = () => {
       } catch (err: any) {
         let finalMessage = "Não foi possível processar o documento.";
         
-        // Tenta parsear erro da API do Gemini (que muitas vezes vem como string JSON)
         try {
           const parsedError = typeof err.message === 'string' ? JSON.parse(err.message) : err;
           if (parsedError.error?.code === 403) {
@@ -435,12 +437,100 @@ const App: React.FC = () => {
       </nav>
 
       <main className="flex-grow flex flex-col items-center justify-start p-4 sm:p-10 no-print relative overflow-x-hidden">
+        {state !== AppState.UPLOAD && state !== AppState.PROCESSING && (
+          <div className="w-full max-w-6xl mb-6 flex justify-start animate-fade-in no-print">
+            <button 
+              onClick={handleReset}
+              className="flex items-center gap-2 px-6 py-3 bg-white border border-gray-100 rounded-2xl text-[10px] font-black uppercase tracking-widest text-gray-500 hover:text-indigo-600 hover:bg-indigo-50 transition-all shadow-sm active:scale-95"
+            >
+              <ArrowLeft className="w-4 h-4" /> Voltar para o Início
+            </button>
+          </div>
+        )}
+
         {state === AppState.UPLOAD && (
-          <div className="mt-8 sm:mt-20 w-full flex flex-col items-center animate-fade-in max-w-4xl text-center">
-            <h1 className="text-3xl sm:text-5xl md:text-6xl font-black text-gray-900 mb-4 sm:mb-6 tracking-tighter px-4">Olá, <span className="text-indigo-600 uppercase">{user.name}</span></h1>
-            <p className="text-gray-400 font-bold max-w-xl mb-12 sm:mb-20 text-sm sm:text-xl leading-relaxed px-6">Emita seus recibos e organize sua contabilidade em segundos.</p>
-            <div className="w-full flex flex-col items-center gap-10">
-              <FileUpload onFileSelect={handleFileSelect} isProcessing={false} />
+          <div className="mt-8 sm:mt-16 w-full flex flex-col items-center animate-fade-in max-w-5xl">
+            <div className="text-center mb-10 sm:mb-16">
+              <h1 className="text-3xl sm:text-5xl md:text-6xl font-black text-gray-900 mb-4 sm:mb-6 tracking-tighter px-4">Olá, <span className="text-indigo-600 uppercase">{user.name}</span></h1>
+              <p className="text-gray-400 font-bold max-w-xl mx-auto mb-0 text-sm sm:text-xl leading-relaxed px-6">Emita seus recibos e organize sua contabilidade em segundos.</p>
+            </div>
+            
+            <div className="w-full grid grid-cols-1 lg:grid-cols-12 gap-10 items-start">
+              <div className="lg:col-span-7">
+                <FileUpload onFileSelect={handleFileSelect} isProcessing={false} />
+              </div>
+              
+              <div className="lg:col-span-5 flex flex-col gap-6">
+                <div className="bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-xl shadow-indigo-100/20">
+                  <div className="flex items-center gap-3 mb-6">
+                    <div className="bg-indigo-600 p-3 rounded-2xl text-white">
+                      <LayoutGrid className="w-6 h-6" />
+                    </div>
+                    <h3 className="text-lg font-black text-gray-900 uppercase tracking-tight">Menu de Documentos</h3>
+                  </div>
+                  
+                  <div className="space-y-4">
+                    <button 
+                      onClick={toggleHistory}
+                      className="w-full group flex items-center justify-between p-5 bg-indigo-50/50 hover:bg-indigo-600 rounded-2xl border border-indigo-100 transition-all duration-300"
+                    >
+                      <div className="flex items-center gap-4">
+                        <div className="bg-white p-3 rounded-xl shadow-sm text-indigo-600 group-hover:bg-indigo-500 group-hover:text-white transition-colors">
+                          <Files className="w-5 h-5" />
+                        </div>
+                        <div className="text-left">
+                          <p className="font-black text-gray-900 group-hover:text-white uppercase text-[10px] tracking-widest">Biblioteca Completa</p>
+                          <p className="font-bold text-gray-400 group-hover:text-indigo-100 text-[10px] leading-tight uppercase opacity-80">{history.length} notas salvas</p>
+                        </div>
+                      </div>
+                      <ChevronRight className="w-5 h-5 text-indigo-300 group-hover:text-white group-hover:translate-x-1 transition-all" />
+                    </button>
+
+                    {history.length > 0 && (
+                      <div className="pt-4 border-t border-gray-100">
+                        <p className="text-[9px] font-black text-gray-300 uppercase tracking-widest mb-4">Notas Recentes</p>
+                        <div className="space-y-3">
+                          {history.slice(0, 3).map((item) => (
+                            <div 
+                              key={item.id}
+                              onClick={() => viewHistoryItem(item)}
+                              className="flex items-center justify-between p-3 rounded-xl hover:bg-gray-50 cursor-pointer border border-transparent hover:border-gray-100 transition-all"
+                            >
+                              <div className="flex items-center gap-3">
+                                <div className="bg-emerald-50 text-emerald-600 p-2 rounded-lg font-black text-[9px] uppercase">
+                                  {item.data.number?.slice(-2) || 'NF'}
+                                </div>
+                                <div className="text-left overflow-hidden">
+                                  <p className="font-black text-gray-900 uppercase text-[10px] truncate max-w-[150px]">{item.data.borrower.name}</p>
+                                  <p className="font-bold text-gray-400 text-[9px] uppercase">{formatCurrency(item.data.values.netValue)}</p>
+                                </div>
+                              </div>
+                              <ArrowLeft className="w-4 h-4 text-gray-300 rotate-180" />
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div className="bg-gray-900 p-8 rounded-[2.5rem] text-white shadow-2xl relative overflow-hidden group">
+                  <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-600/20 blur-3xl rounded-full translate-x-10 -translate-y-10 group-hover:scale-150 transition-transform duration-700"></div>
+                  <div className="relative z-10">
+                    <div className="bg-white/10 p-3 rounded-2xl w-fit mb-4">
+                      <SettingsIcon className="w-6 h-6 text-indigo-400" />
+                    </div>
+                    <h3 className="text-lg font-black uppercase tracking-tight mb-2">Painel de Ajustes</h3>
+                    <p className="text-[10px] font-bold text-indigo-200/60 uppercase tracking-widest leading-relaxed mb-6">Configure seu logotipo, assinatura e gerencie usuários da plataforma.</p>
+                    <button 
+                      onClick={toggleSettings}
+                      className="w-full py-4 bg-white text-gray-900 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-indigo-400 hover:text-white transition-all active:scale-95"
+                    >
+                      Abrir Painel
+                    </button>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         )}
@@ -469,7 +559,6 @@ const App: React.FC = () => {
 
         {state === AppState.PREVIEW && data && (
           <div className="w-full max-w-6xl animate-fade-in mt-2 flex flex-col items-center gap-0">
-            {/* TABS NAVEGAÇÃO - Movidas para cima e integradas */}
             <div className="flex p-1 bg-white/80 border border-gray-100 rounded-2xl sm:rounded-[2rem] shadow-xl z-40 backdrop-blur-md mb-[-1.5rem] relative translate-y-[-0.5rem]">
                <button 
                  onClick={() => setActiveTab('INVOICE')} 
