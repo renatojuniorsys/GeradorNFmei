@@ -1,8 +1,8 @@
 
 import React from 'react';
 import { InvoiceData, AppSettings, PdfMargins } from '../types';
-import { formatCurrency, formatDate, formatDocument, numberToWordsPTBR } from '../services/utils';
-import { Building2, CheckCircle2, Move, Printer, Loader2 } from 'lucide-react';
+import { formatCurrency, formatDate, formatDocument, numberToWordsPTBR, formatInvoiceNumber } from '../services/utils';
+import { Building2, CheckCircle2, Move, Printer, Loader2, CreditCard } from 'lucide-react';
 
 interface Props {
   data: InvoiceData;
@@ -28,15 +28,21 @@ export const ReceiptPreview: React.FC<Props> = ({
     ? `https://www.nfse.gov.br/ConsultaPublica/?tpc=1&chave=${cleanKey}`
     : `https://www.nfse.gov.br/ConsultaPublica/?cod=${data.verificationCode}`;
     
-  // Otimização: Aumento da resolução para 1000x1000 para impressão cristalina
   const dynamicQrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=1000x1000&data=${encodeURIComponent(officialUrl)}&margin=10&format=png`;
 
   const margins = settings?.pdfMargins || { top: 40, bottom: 40, left: 40, right: 40 };
 
   const handleMarginChange = (key: keyof PdfMargins, value: string) => {
-    const numValue = Math.max(0, Math.floor(Number(value)) || 0);
-    if (onUpdateMargins) {
-      onUpdateMargins({ ...margins, [key]: numValue });
+    if (value === '') {
+      if (onUpdateMargins) {
+        onUpdateMargins({ ...margins, [key]: 0 });
+      }
+      return;
+    }
+
+    const numValue = parseInt(value, 10);
+    if (!isNaN(numValue) && onUpdateMargins) {
+      onUpdateMargins({ ...margins, [key]: Math.max(0, numValue) });
     }
   };
 
@@ -49,11 +55,13 @@ export const ReceiptPreview: React.FC<Props> = ({
 
   const extenso = numberToWordsPTBR(data.values.netValue).toUpperCase();
 
+  const hasBankDetails = settings?.bankName || settings?.bankAccount;
+
   return (
     <div className={`relative w-full flex flex-col items-center group max-w-full overflow-x-hidden no-scrollbar receipt-container-root ${isPrinting ? 'p-0' : ''}`}>
       {!isPrinting && (
         <div className="no-print mb-8 w-full max-w-[210mm] flex flex-col gap-4 px-4 sm:px-0 animate-fade-in">
-          <div className="flex flex-col md:flex-row justify-between items-stretch md:items-center bg-white p-4 sm:p-5 rounded-3xl border border-gray-100 shadow-sm gap-6">
+          <div className="flex flex-col md:flex-row justify-between items-stretch md:items-center bg-white p-4 sm:p-5 rounded-3xl border border-gray-100 shadow-sm gap-6 relative z-10">
             <div className="flex items-center gap-3">
               <div className="bg-indigo-50 p-2.5 rounded-xl text-indigo-600 shrink-0"><Move className="w-5 h-5" /></div>
               <div>
@@ -66,7 +74,15 @@ export const ReceiptPreview: React.FC<Props> = ({
                 {(['top', 'bottom', 'left', 'right'] as const).map((side) => (
                   <div key={side} className="flex flex-col items-center">
                     <label className="text-[7px] font-black text-gray-400 uppercase mb-0.5">{side}</label>
-                    <input type="number" min="0" step="1" value={margins[side]} onChange={(e) => handleMarginChange(side, e.target.value)} className="w-10 bg-white border border-gray-200 rounded-lg p-1 text-center text-[10px] font-black text-gray-700 outline-none focus:ring-2 focus:ring-indigo-500/10" />
+                    <input 
+                      type="number" 
+                      min="0" 
+                      step="1" 
+                      value={margins[side] === 0 ? '' : margins[side]} 
+                      placeholder="0"
+                      onChange={(e) => handleMarginChange(side, e.target.value)} 
+                      className="w-10 bg-white border border-gray-200 rounded-lg p-1 text-center text-[10px] font-black text-gray-700 outline-none focus:ring-2 focus:ring-indigo-500/10 transition-all" 
+                    />
                   </div>
                 ))}
               </div>
@@ -94,11 +110,11 @@ export const ReceiptPreview: React.FC<Props> = ({
         <div className="border-[5px] border-gray-900 p-6 sm:p-10 relative flex flex-col flex-grow box-border h-full overflow-hidden bg-white">
           <header className="flex justify-between items-start border-b-[5px] border-gray-900 pb-6 mb-6 shrink-0">
              <div className="flex flex-col gap-4">
-               <div className="max-w-[150px] sm:max-w-[200px]">
+               <div className="max-w-[250px] sm:max-w-[450px]">
                  {settings?.logoUrl ? (
-                   <img src={settings.logoUrl} alt="Logo" className="max-h-16 sm:max-h-24 w-auto object-contain" />
+                   <img src={settings.logoUrl} alt="Logo" className="max-h-40 sm:max-h-64 w-auto object-contain" />
                  ) : (
-                   <div className="bg-gray-900 text-white p-3 rounded-xl shadow-lg inline-block"><Building2 className="w-6 h-6 sm:w-8 sm:h-8" /></div>
+                   <div className="bg-gray-900 text-white p-4 rounded-xl shadow-lg inline-block"><Building2 className="w-10 h-10 sm:w-14 sm:h-14" /></div>
                  )}
                </div>
                {settings?.qrCodeUrl && (
@@ -112,7 +128,7 @@ export const ReceiptPreview: React.FC<Props> = ({
              </div>
              <div className="text-right flex flex-col items-end">
                 <h2 className="text-4xl sm:text-6xl font-black text-gray-900 tracking-tighter uppercase leading-none">RECIBO</h2>
-                <p className="text-[9px] sm:text-[10px] font-black text-gray-500 uppercase tracking-widest mt-1">REF. NF Nº {data.number || '00'}</p>
+                <p className="text-[9px] sm:text-[10px] font-black text-gray-500 uppercase tracking-widest mt-1">REF. NF Nº {formatInvoiceNumber(data.number)}</p>
                 <div className="mt-3 py-3 px-6 sm:py-5 sm:px-10 bg-black rounded-[1.5rem] sm:rounded-[2rem] flex flex-col items-center justify-center shadow-xl">
                   <span className="text-[7px] sm:text-[9px] font-black text-gray-400 uppercase tracking-[0.2em] mb-0.5">Valor Líquido</span>
                   <span className="text-2xl sm:text-4xl font-black text-white tabular-nums tracking-tighter leading-tight">{formatCurrency(data.values.netValue)}</span>
@@ -120,22 +136,46 @@ export const ReceiptPreview: React.FC<Props> = ({
              </div>
           </header>
 
-          <div className="space-y-6 sm:space-y-8 text-gray-900 shrink-0">
+          <div className="space-y-6 sm:space-y-8 text-gray-900 flex-grow">
             <p className="text-base sm:text-xl leading-snug tracking-tight">
               Recebemos de <span className="font-black border-b-[3px] sm:border-b-[4px] border-gray-300 px-1 uppercase">{data.borrower.name || '---'}</span>, inscrito sob o nº <span className="font-mono font-bold bg-gray-50 px-2 py-1 rounded-lg border border-gray-200 text-sm sm:text-base">{formatDocument(data.borrower.document)}</span>, a importância líquida de:
             </p>
             <div className="p-6 sm:p-10 bg-black text-white rounded-[2rem] sm:rounded-[2.5rem] font-black italic text-center leading-tight shadow-lg">
               <span className={`${extenso.length > 50 ? 'text-lg sm:text-2xl' : 'text-xl sm:text-3xl'} block`}>"{extenso}"</span>
             </div>
-            <div className="p-5 sm:p-7 bg-gray-50/80 rounded-[1.5rem] sm:rounded-[2rem] border-l-[8px] sm:border-l-[12px] border-gray-900 shadow-inner flex-shrink">
+            <div className="p-5 sm:p-7 bg-gray-50/80 rounded-[1.5rem] sm:rounded-[2rem] border-l-[8px] sm:border-l-[12px] border-gray-900 shadow-inner">
               <p className="text-[8px] sm:text-[10px] font-black text-gray-500 uppercase tracking-[0.2em] mb-2">Serviços Prestados:</p>
               <p className="italic text-gray-900 text-sm sm:text-lg leading-relaxed font-bold line-clamp-5 overflow-hidden">{data.description || 'Prestação de serviços diversos conforme discriminado na nota fiscal eletrônica.'}</p>
             </div>
           </div>
-          <div className="flex-grow min-h-[20px]"></div>
-          <div className="mb-6 sm:mb-8 text-right shrink-0">
+
+          {/* Dados Bancários no Rodapé do Corpo */}
+          {hasBankDetails && (
+            <div className="mt-6 p-4 border-2 border-dashed border-gray-200 rounded-2xl flex items-center gap-4 bg-gray-50/30">
+              <div className="bg-gray-900 p-2 rounded-xl text-white">
+                <CreditCard className="w-5 h-5" />
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-6 gap-y-1">
+                <div className="flex flex-col">
+                  <span className="text-[7px] font-black text-gray-400 uppercase">Banco</span>
+                  <span className="text-[10px] font-black text-gray-900 uppercase truncate">{settings?.bankName} ({settings?.bankCode})</span>
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-[7px] font-black text-gray-400 uppercase">Agência</span>
+                  <span className="text-[10px] font-black text-gray-900">{settings?.bankAgency}</span>
+                </div>
+                <div className="flex flex-col col-span-2">
+                  <span className="text-[7px] font-black text-gray-400 uppercase">Conta para Depósito</span>
+                  <span className="text-[10px] font-black text-gray-900">{settings?.bankAccount}</span>
+                </div>
+              </div>
+            </div>
+          )}
+
+          <div className="mt-8 mb-6 sm:mb-8 text-right shrink-0">
             <p className="text-xl sm:text-3xl font-black text-gray-900 tracking-tight">{data.provider.city || 'Cidade'}, {formatDate(data.issueDate)}</p>
           </div>
+
           <div className="flex flex-col items-center mb-6 sm:mb-8 shrink-0">
             <div className="relative w-full max-w-md sm:max-w-xl flex flex-col items-center">
               {settings?.signatureUrl && <img src={settings.signatureUrl} alt="Sign" className="max-h-16 sm:max-h-24 mb-[-10px] sm:mb-[-15px] w-auto relative z-10 grayscale opacity-95" />}
@@ -144,6 +184,7 @@ export const ReceiptPreview: React.FC<Props> = ({
               <p className="text-[9px] sm:text-[11px] font-bold text-gray-500 uppercase tracking-[0.3em] mt-1.5">CNPJ: {formatDocument(data.provider.document)}</p>
             </div>
           </div>
+
           <footer className="pt-4 sm:pt-6 border-t-[3px] sm:border-t-[4px] border-gray-900 flex justify-between items-end shrink-0">
             <div className="text-[8px] sm:text-[10px] font-black text-gray-500 uppercase tracking-[0.1em] max-w-[300px] sm:max-w-[450px] leading-tight">ESTE RECIBO POSSUI VALIDADE JURÍDICA COMPLEMENTAR À NFS-E DIGITAL PARA FINS DE QUITAÇÃO DE OBRIGAÇÕES FINANCEIRAS ENTRE AS PARTES.</div>
             <div className="p-1 sm:p-1.5 border-[2px] sm:border-[3px] border-gray-900 rounded-xl sm:rounded-2xl bg-white flex items-center justify-center">

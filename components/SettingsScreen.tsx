@@ -1,9 +1,29 @@
 
-import React, { useState } from 'react';
 import { User, AppSettings, UserRole, HistoryItem } from '../types';
-import { Trash2, Upload, ImageIcon, QrCode, PenTool, MousePointer2, Sparkles, Loader2, X, UserCog, UserPlus, Shield, Database, Download, AlertCircle, ArrowLeft } from 'lucide-react';
+import { 
+  Trash2, 
+  Upload, 
+  ImageIcon, 
+  QrCode, 
+  PenTool, 
+  MousePointer2, 
+  Sparkles, 
+  Loader2, 
+  X, 
+  UserCog, 
+  UserPlus, 
+  Shield, 
+  Database, 
+  Download, 
+  AlertCircle, 
+  ArrowLeft,
+  Check,
+  CreditCard,
+  Building
+} from 'lucide-react';
 import { SignaturePad } from './SignaturePad';
 import { generateAiLogo } from '../services/geminiService';
+import React, { useState } from 'react';
 
 interface Props {
   users: User[];
@@ -153,59 +173,120 @@ export const SettingsScreen: React.FC<Props> = ({ users, setUsers, settings, set
 
       <div className="p-6 sm:p-10 overflow-y-auto no-scrollbar">
         {activeTab === 'VISUAL' && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-10">
-            <div className="border border-gray-100 rounded-[2rem] p-6 sm:p-8 flex flex-col items-center text-center bg-gray-50/30">
-              <div className="w-full h-32 sm:h-40 mb-6 bg-white border border-gray-100 rounded-2xl flex items-center justify-center overflow-hidden shadow-inner p-4 relative group">
-                {settings.logoUrl ? (
-                  <>
-                    <img src={settings.logoUrl} alt="Logo" className="max-h-full max-w-full object-contain" />
-                    <button onClick={() => handleRemoveImage('logoUrl')} className="absolute top-2 right-2 p-2 bg-rose-500 text-white rounded-lg opacity-0 group-hover:opacity-100 shadow-lg">
-                      <X className="w-3 h-3" />
-                    </button>
-                  </>
-                ) : (
-                  <ImageIcon className="w-10 h-10 text-gray-200" />
-                )}
-                {isGeneratingLogo && (
-                  <div className="absolute inset-0 bg-white/90 backdrop-blur-sm flex flex-col items-center justify-center">
-                    <Loader2 className="w-8 h-8 text-indigo-600 animate-spin mb-2" />
-                    <span className="text-[9px] font-black text-indigo-600 uppercase">Gerando IA...</span>
-                  </div>
-                )}
+          <div className="space-y-10">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-10">
+              <div className="border border-gray-100 rounded-[2rem] p-6 sm:p-8 flex flex-col items-center text-center bg-gray-50/30">
+                <div className="w-full h-32 sm:h-40 mb-6 bg-white border border-gray-100 rounded-2xl flex items-center justify-center overflow-hidden shadow-inner p-4 relative group">
+                  {settings.logoUrl ? (
+                    <>
+                      <img src={settings.logoUrl} alt="Logo" className="max-h-full max-w-full object-contain" />
+                      <button onClick={() => handleRemoveImage('logoUrl')} className="absolute top-2 right-2 p-2 bg-rose-500 text-white rounded-lg opacity-0 group-hover:opacity-100 shadow-lg">
+                        <X className="w-3 h-3" />
+                      </button>
+                    </>
+                  ) : (
+                    <ImageIcon className="w-10 h-10 text-gray-200" />
+                  )}
+                  {isGeneratingLogo && (
+                    <div className="absolute inset-0 bg-white/90 backdrop-blur-sm flex flex-col items-center justify-center">
+                      <Loader2 className="w-8 h-8 text-indigo-600 animate-spin mb-2" />
+                      <span className="text-[9px] font-black text-indigo-600 uppercase">Gerando IA...</span>
+                    </div>
+                  )}
+                </div>
+                <h3 className="font-black text-gray-900 uppercase text-sm mb-1">Logotipo da Empresa</h3>
+                <p className="text-[9px] text-gray-400 font-bold uppercase tracking-widest mb-6">Exibido na Nota e no Recibo</p>
+                
+                <div className="flex flex-col gap-3 w-full">
+                  <button onClick={handleGenerateAiLogo} disabled={isGeneratingLogo} className="w-full bg-indigo-600 text-white py-4 rounded-xl text-[9px] font-black uppercase flex items-center justify-center gap-2 shadow-xl shadow-indigo-100 disabled:opacity-50">
+                    <Sparkles className="w-3.5 h-3.5" /> Gerar com IA
+                  </button>
+                  <label className="w-full cursor-pointer bg-white border border-gray-200 text-gray-900 py-4 rounded-xl text-[9px] font-black uppercase flex items-center justify-center gap-2 hover:bg-gray-50">
+                    <Upload className="w-3.5 h-3.5" /> Upload Manual
+                    <input type="file" className="hidden" accept="image/*" onChange={(e) => handleImageUpload(e, 'logoUrl')} />
+                  </label>
+                </div>
               </div>
-              <h3 className="font-black text-gray-900 uppercase text-sm mb-1">Logotipo da Empresa</h3>
-              <p className="text-[9px] text-gray-400 font-bold uppercase tracking-widest mb-6">Exibido na Nota e no Recibo</p>
-              
-              <div className="flex flex-col gap-3 w-full">
-                <button onClick={handleGenerateAiLogo} disabled={isGeneratingLogo} className="w-full bg-indigo-600 text-white py-4 rounded-xl text-[9px] font-black uppercase flex items-center justify-center gap-2 shadow-xl shadow-indigo-100 disabled:opacity-50">
-                  <Sparkles className="w-3.5 h-3.5" /> Gerar com IA
-                </button>
+
+              <div className="border border-gray-100 rounded-[2rem] p-6 sm:p-8 flex flex-col items-center text-center bg-gray-50/30">
+                <div className="w-full h-32 sm:h-40 mb-6 bg-white border border-gray-100 rounded-2xl flex items-center justify-center overflow-hidden shadow-inner p-4 relative group">
+                  {settings.qrCodeUrl ? (
+                    <>
+                      <img src={settings.qrCodeUrl} alt="QR" className="h-full w-auto object-contain" />
+                      <button onClick={() => handleRemoveImage('qrCodeUrl')} className="absolute top-2 right-2 p-2 bg-rose-500 text-white rounded-lg opacity-0 group-hover:opacity-100 shadow-lg">
+                        <X className="w-3 h-3" />
+                      </button>
+                    </>
+                  ) : (
+                    <QrCode className="w-10 h-10 text-gray-200" />
+                  )}
+                </div>
+                <h3 className="font-black text-gray-900 uppercase text-sm mb-1">QR Code de Pagamento</h3>
+                <p className="text-[9px] text-gray-400 font-bold uppercase tracking-widest mb-6">PIX Estático ou Personalizado</p>
                 <label className="w-full cursor-pointer bg-white border border-gray-200 text-gray-900 py-4 rounded-xl text-[9px] font-black uppercase flex items-center justify-center gap-2 hover:bg-gray-50">
-                  <Upload className="w-3.5 h-3.5" /> Upload Manual
-                  <input type="file" className="hidden" accept="image/*" onChange={(e) => handleImageUpload(e, 'logoUrl')} />
+                  <Upload className="w-3.5 h-3.5" /> Upload QR Code
+                  <input type="file" className="hidden" accept="image/*" onChange={(e) => handleImageUpload(e, 'qrCodeUrl')} />
                 </label>
               </div>
             </div>
 
-            <div className="border border-gray-100 rounded-[2rem] p-6 sm:p-8 flex flex-col items-center text-center bg-gray-50/30">
-              <div className="w-full h-32 sm:h-40 mb-6 bg-white border border-gray-100 rounded-2xl flex items-center justify-center overflow-hidden shadow-inner p-4 relative group">
-                {settings.qrCodeUrl ? (
-                  <>
-                    <img src={settings.qrCodeUrl} alt="QR" className="h-full w-auto object-contain" />
-                    <button onClick={() => handleRemoveImage('qrCodeUrl')} className="absolute top-2 right-2 p-2 bg-rose-500 text-white rounded-lg opacity-0 group-hover:opacity-100 shadow-lg">
-                      <X className="w-3 h-3" />
-                    </button>
-                  </>
-                ) : (
-                  <QrCode className="w-10 h-10 text-gray-200" />
-                )}
+            {/* Nova seção: Dados Bancários */}
+            <div className="bg-indigo-50/40 p-6 sm:p-10 rounded-[2.5rem] border border-indigo-100/50 shadow-inner">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="bg-indigo-600 p-2.5 rounded-xl text-white">
+                  <CreditCard className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-black text-gray-900 uppercase text-sm leading-none">Dados Bancários para Depósito</h3>
+                  <p className="text-[9px] text-gray-400 font-bold uppercase tracking-widest mt-1">Serão impressos no rodapé do recibo</p>
+                </div>
               </div>
-              <h3 className="font-black text-gray-900 uppercase text-sm mb-1">QR Code de Pagamento</h3>
-              <p className="text-[9px] text-gray-400 font-bold uppercase tracking-widest mb-6">PIX Estático ou Personalizado</p>
-              <label className="w-full cursor-pointer bg-white border border-gray-200 text-gray-900 py-4 rounded-xl text-[9px] font-black uppercase flex items-center justify-center gap-2 hover:bg-gray-50">
-                <Upload className="w-3.5 h-3.5" /> Upload QR Code
-                <input type="file" className="hidden" accept="image/*" onChange={(e) => handleImageUpload(e, 'qrCodeUrl')} />
-              </label>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <label className="text-[8px] font-black text-gray-400 uppercase tracking-widest ml-1">Nome do Banco</label>
+                  <div className="relative">
+                    <Building className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-indigo-300" />
+                    <input 
+                      type="text" 
+                      value={settings.bankName || ''} 
+                      onChange={e => setSettings({...settings, bankName: e.target.value})}
+                      placeholder="Ex: Nubank S.A."
+                      className="w-full pl-9 pr-4 py-3 bg-white border border-gray-200 rounded-xl text-[11px] font-bold text-gray-800 outline-none focus:ring-2 focus:ring-indigo-500/20"
+                    />
+                  </div>
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[8px] font-black text-gray-400 uppercase tracking-widest ml-1">Código Banco</label>
+                  <input 
+                    type="text" 
+                    value={settings.bankCode || ''} 
+                    onChange={e => setSettings({...settings, bankCode: e.target.value})}
+                    placeholder="Ex: 260"
+                    className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-[11px] font-bold text-gray-800 outline-none focus:ring-2 focus:ring-indigo-500/20"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[8px] font-black text-gray-400 uppercase tracking-widest ml-1">Agência</label>
+                  <input 
+                    type="text" 
+                    value={settings.bankAgency || ''} 
+                    onChange={e => setSettings({...settings, bankAgency: e.target.value})}
+                    placeholder="Ex: 0001"
+                    className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-[11px] font-bold text-gray-800 outline-none focus:ring-2 focus:ring-indigo-500/20"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[8px] font-black text-gray-400 uppercase tracking-widest ml-1">Conta (com dígito)</label>
+                  <input 
+                    type="text" 
+                    value={settings.bankAccount || ''} 
+                    onChange={e => setSettings({...settings, bankAccount: e.target.value})}
+                    placeholder="Ex: 1234567-8"
+                    className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-[11px] font-bold text-gray-800 outline-none focus:ring-2 focus:ring-indigo-500/20"
+                  />
+                </div>
+              </div>
             </div>
           </div>
         )}
@@ -352,9 +433,3 @@ export const SettingsScreen: React.FC<Props> = ({ users, setUsers, settings, set
     </div>
   );
 };
-
-const Check = ({ className }: { className?: string }) => (
-  <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-  </svg>
-);

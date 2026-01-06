@@ -2,16 +2,26 @@
 /**
  * Formats a currency number to BRL (R$)
  */
-export const formatCurrency = (value: number | undefined | null): string => {
-  // Garante que o valor seja um número válido ou 0
-  const amount = (typeof value === 'number' && !isNaN(value)) ? value : 0;
-  
+export const formatCurrency = (amount: number | undefined | null): string => {
+  const value = (typeof amount === 'number' && !isNaN(amount)) ? amount : 0;
   return new Intl.NumberFormat('pt-BR', {
     style: 'currency',
     currency: 'BRL',
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
-  }).format(amount);
+  }).format(value);
+};
+
+/**
+ * Formats an invoice number to have at least 4 digits, padding with leading zeros if necessary.
+ */
+export const formatInvoiceNumber = (num: string | null | undefined): string => {
+  if (!num) return '0000';
+  // Se for puramente numérico, aplica o padding
+  if (/^\d+$/.test(num)) {
+    return num.padStart(4, '0');
+  }
+  return num;
 };
 
 /**
@@ -22,6 +32,25 @@ export const formatDate = (dateString: string | null): string => {
   try {
     const date = new Date(dateString);
     return new Intl.DateTimeFormat('pt-BR').format(date);
+  } catch (e) {
+    return dateString;
+  }
+};
+
+/**
+ * Formats a date string to DD/MM/YYYY HH:mm
+ */
+export const formatDateTime = (dateString: string | null): string => {
+  if (!dateString) return '--/--/---- --:--';
+  try {
+    const date = new Date(dateString);
+    return new Intl.DateTimeFormat('pt-BR', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    }).format(date);
   } catch (e) {
     return dateString;
   }

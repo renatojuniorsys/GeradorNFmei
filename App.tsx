@@ -16,25 +16,16 @@ import {
   LogOut, 
   Settings as SettingsIcon, 
   FileStack, 
-  Download, 
   Loader2, 
-  History as HistoryIcon,
-  Trash2,
-  Eye,
-  ChevronLeft,
-  Calendar,
-  User as UserIcon,
-  Share2,
-  Files,
-  XCircle,
-  CheckCircle2,
-  Info,
-  Database,
+  Files, 
+  XCircle, 
+  CheckCircle2, 
+  Info, 
   ArrowLeft,
   LayoutGrid,
-  ChevronRight
+  ChevronRight,
+  Share2
 } from 'lucide-react';
-import { InfoTooltip } from './components/InfoTooltip';
 
 declare const html2pdf: any;
 
@@ -74,43 +65,25 @@ const App: React.FC = () => {
           ...parsed,
           pdfMargins: parsed.pdfMargins || { top: 40, bottom: 40, left: 40, right: 40 }
         });
-      } catch (e) {
-        console.error("Erro ao carregar settings:", e);
-      }
+      } catch (e) { console.error(e); }
     }
-
     const savedHistory = localStorage.getItem('invoice_history');
     if (savedHistory) setHistory(JSON.parse(savedHistory));
-
     const savedUsers = localStorage.getItem('app_users');
     if (savedUsers) setUsers(JSON.parse(savedUsers));
   }, []);
 
-  useEffect(() => {
-    localStorage.setItem('invoice_history', JSON.stringify(history));
-  }, [history]);
-
-  useEffect(() => {
-    localStorage.setItem('app_settings', JSON.stringify(settings));
-  }, [settings]);
-
-  useEffect(() => {
-    localStorage.setItem('app_users', JSON.stringify(users));
-  }, [users]);
+  useEffect(() => { localStorage.setItem('invoice_history', JSON.stringify(history)); }, [history]);
+  useEffect(() => { localStorage.setItem('app_settings', JSON.stringify(settings)); }, [settings]);
+  useEffect(() => { localStorage.setItem('app_users', JSON.stringify(users)); }, [users]);
 
   const showNotification = (type: Notification['type'], message: string, duration = 4000) => {
     setNotification({ type, message });
-    if (type !== 'LOADING') {
-      setTimeout(() => setNotification(null), duration);
-    }
+    if (type !== 'LOADING') setTimeout(() => setNotification(null), duration);
   };
 
   const saveToHistory = (newData: InvoiceData) => {
-    const newItem: HistoryItem = {
-      id: Math.random().toString(36).substr(2, 9),
-      timestamp: Date.now(),
-      data: newData
-    };
+    const newItem: HistoryItem = { id: Math.random().toString(36).substr(2, 9), timestamp: Date.now(), data: newData };
     setHistory(prev => [newItem, ...prev].slice(0, 30));
   };
 
@@ -120,62 +93,52 @@ const App: React.FC = () => {
   };
 
   const handleUpdatePassword = (username: string, role: UserRole, newPassword: string) => {
-    setUsers(prev => prev.map(u => 
-      u.name === username && u.role === role ? { ...u, password: newPassword } : u
-    ));
+    setUsers(prev => prev.map(u => u.name === username && u.role === role ? { ...u, password: newPassword } : u ));
     return true;
   };
 
-  const handleLogout = () => {
-    setUser(null);
-    handleReset();
+  const handleLogout = () => { setUser(null); handleReset(); };
+
+  const handleUpdateMargins = (newMargins: PdfMargins) => {
+    setSettings(prev => ({ ...prev, pdfMargins: newMargins }));
+  };
+
+  const handleUpdateData = (newData: InvoiceData) => {
+    setData(newData);
+    // Atualiza também no histórico se for a nota atual
+    setHistory(prev => prev.map(item => item.data.accessKey === newData.accessKey || item.data.number === newData.number ? { ...item, data: newData } : item));
   };
 
   const handleFileSelect = async (file: File) => {
     setState(AppState.PROCESSING);
     setErrorMsg(null);
-
     const reader = new FileReader();
     reader.onload = async () => {
       const base64 = reader.result as string;
-      const mimeType = file.type;
       const base64Data = base64.split(',')[1];
-
       try {
-        const extractedData = await extractInvoiceData(base64Data, mimeType);
+        const extractedData = await extractInvoiceData(base64Data, file.type);
         setData(extractedData);
         saveToHistory(extractedData);
         setState(AppState.PREVIEW);
         showNotification('SUCCESS', 'Documento processado com sucesso!');
       } catch (err: any) {
-        let finalMessage = "Não foi possível processar o documento.";
-        
-        try {
-          const parsedError = typeof err.message === 'string' ? JSON.parse(err.message) : err;
-          if (parsedError.error?.code === 403) {
-            finalMessage = "Erro de Autenticação: A chave de API expirou ou foi bloqueada. Contate o administrador.";
-          } else if (parsedError.error?.message) {
-            finalMessage = `Erro na Extração: ${parsedError.error.message}`;
-          }
-        } catch (e) {
-          finalMessage = err.message || finalMessage;
-        }
-
-        setErrorMsg(finalMessage);
+        setErrorMsg(err.message || "Falha ao processar documento.");
         setState(AppState.ERROR);
-        showNotification('ERROR', 'Falha na comunicação com a IA.');
+        showNotification('ERROR', 'Falha na leitura.');
       }
     };
     reader.readAsDataURL(file);
   };
 
-  const waitForImages = (container: HTMLElement): Promise<void[]> => {
+  const waitForImages = async (container: HTMLElement) => {
     const images = Array.from(container.querySelectorAll('img'));
     const promises = images.map(img => {
       if (img.complete) return Promise.resolve();
       return new Promise<void>((resolve) => {
-        img.onload = () => resolve();
-        img.onerror = () => resolve(); 
+        const timeout = setTimeout(() => resolve(), 2500); // Timeout de segurança
+        img.onload = () => { clearTimeout(timeout); resolve(); };
+        img.onerror = () => { clearTimeout(timeout); resolve(); };
       });
     });
     return Promise.all(promises);
@@ -183,90 +146,47 @@ const App: React.FC = () => {
 
   const generatePdfBlob = async (type: 'INVOICE' | 'RECEIPT' | 'BOTH'): Promise<{blob: Blob, fileName: string} | null> => {
     if (!data) return null;
-    
     const renderZone = document.getElementById('pdf-render-zone');
-    if (!renderZone) throw new Error("Zona de renderização não encontrada.");
-
+    if (!renderZone) throw new Error("Ambiente de renderização não encontrado.");
     renderZone.innerHTML = '';
     
-    const providerName = data.provider.name?.split(' ')[0] || 'MEI';
-    const fileName = `${type === 'BOTH' ? 'PACOTE' : type}-${data.number || '00'}-${providerName}.pdf`;
+    const fileName = `${type}-${data.number || '00'}-${data.provider.name?.split(' ')[0]}.pdf`;
+    const invoiceEl = document.querySelector('.invoice-hidden-source .print-container');
+    const receiptEl = document.querySelector('.receipt-hidden-source .print-container');
 
-    const invoiceElement = document.querySelector('.invoice-hidden-source .print-container');
-    const receiptElement = document.querySelector('.receipt-hidden-source .print-container');
-
-    const elementsToCapture = [];
-    if ((type === 'INVOICE' || type === 'BOTH') && invoiceElement) {
-      elementsToCapture.push(invoiceElement);
-    }
-    if ((type === 'RECEIPT' || type === 'BOTH') && receiptElement) {
-      elementsToCapture.push(receiptElement);
-    }
-
-    if (elementsToCapture.length === 0) {
-      const activePreview = document.querySelector('.print-container');
-      if (activePreview) elementsToCapture.push(activePreview);
-      else throw new Error("Conteúdo não preparado. Tente novamente.");
-    }
+    const elements = [];
+    if ((type === 'INVOICE' || type === 'BOTH') && invoiceEl) elements.push(invoiceEl);
+    if ((type === 'RECEIPT' || type === 'BOTH') && receiptEl) elements.push(receiptEl);
 
     const captureContainer = document.createElement('div');
-    captureContainer.style.backgroundColor = 'white';
-
-    elementsToCapture.forEach((el) => {
-      const pageDiv = document.createElement('div');
-      pageDiv.className = 'pdf-page-A4';
-      
-      const clone = el.cloneNode(true) as HTMLElement;
-      
-      const originalCanvases = el.querySelectorAll('canvas');
-      const cloneCanvases = clone.querySelectorAll('canvas');
-      originalCanvases.forEach((orig, i) => {
-        const dest = cloneCanvases[i] as HTMLCanvasElement;
-        if (dest) {
-          dest.width = (orig as HTMLCanvasElement).width;
-          dest.height = (orig as HTMLCanvasElement).height;
-          dest.getContext('2d')?.drawImage(orig as HTMLCanvasElement, 0, 0);
-        }
-      });
-
-      pageDiv.appendChild(clone);
-      captureContainer.appendChild(pageDiv);
+    elements.forEach(el => {
+      const page = document.createElement('div');
+      page.className = 'pdf-page-A4';
+      page.appendChild(el.cloneNode(true));
+      captureContainer.appendChild(page);
     });
-
     renderZone.appendChild(captureContainer);
 
     await waitForImages(captureContainer);
-    await new Promise(r => setTimeout(r, 500)); 
+    await new Promise(r => setTimeout(r, 400));
 
     const opt = {
       margin: 0,
       filename: fileName,
       image: { type: 'jpeg', quality: 1.0 },
-      html2canvas: { 
-        scale: 3, 
-        useCORS: true, 
-        letterRendering: true,
-        backgroundColor: '#ffffff',
-        logging: false,
-        width: 794
-      },
-      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait', compress: true }
+      html2canvas: { scale: 2, useCORS: true, letterRendering: true, backgroundColor: '#ffffff' },
+      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
     };
-    
-    try {
-      const blob = await html2pdf().from(captureContainer).set(opt).output('blob');
-      renderZone.innerHTML = '';
-      return { blob, fileName };
-    } catch (e) {
-      renderZone.innerHTML = '';
-      throw new Error("Falha na geração do arquivo PDF.");
-    }
+
+    const blob = await html2pdf().from(captureContainer).set(opt).output('blob');
+    renderZone.innerHTML = '';
+    return { blob, fileName };
   };
 
   const downloadPDF = async (type: 'INVOICE' | 'RECEIPT' | 'BOTH') => {
+    if (isDownloading) return;
     setIsDownloading(true);
-    showNotification('LOADING', 'Gerando documento em alta definição...');
-    
+    showNotification('LOADING', 'Gerando arquivo de alta fidelidade...');
     try {
       const result = await generatePdfBlob(type);
       if (result) {
@@ -276,331 +196,121 @@ const App: React.FC = () => {
         link.download = result.fileName;
         link.click();
         URL.revokeObjectURL(url);
-        showNotification('SUCCESS', 'Download concluído com sucesso!');
+        showNotification('SUCCESS', 'Arquivo pronto!');
       }
-    } catch (error: any) {
-      console.error("Erro PDF:", error);
-      showNotification('ERROR', error.message || "Ocorreu um erro ao baixar o PDF.");
+    } catch (e: any) {
+      showNotification('ERROR', 'Erro ao gerar arquivo.');
     } finally {
       setIsDownloading(false);
     }
   };
 
-  const shareFullPdf = async () => {
-    if (!navigator.share) {
-      showNotification('INFO', 'Navegador não suporta compartilhamento direto.');
-      downloadPDF('BOTH');
-      return;
-    }
+  const handleReset = () => { setData(null); setState(AppState.UPLOAD); setErrorMsg(null); setNotification(null); };
 
-    setIsDownloading(true);
-    showNotification('LOADING', 'Processando documento para compartilhamento...');
-
-    try {
-      const result = await generatePdfBlob('BOTH');
-      if (result) {
-        const file = new File([result.blob], result.fileName, { type: 'application/pdf' });
-        
-        if (navigator.canShare && navigator.canShare({ files: [file] })) {
-          await navigator.share({
-            files: [file],
-            title: `NF-e ${data?.number}`,
-            text: `Documento fiscal gerado para ${data?.provider.name}`
-          });
-          showNotification('SUCCESS', 'Compartilhamento concluído!');
-        } else {
-          showNotification('INFO', 'Erro ao anexar arquivo.');
-          downloadPDF('BOTH');
-        }
-      }
-    } catch (error: any) {
-      console.error("Erro Share:", error);
-      showNotification('ERROR', "Falha ao compartilhar.");
-    } finally {
-      setIsDownloading(false);
-    }
-  };
-
-  const handleReset = () => {
-    setData(null);
-    setState(AppState.UPLOAD);
-    setErrorMsg(null);
-    setNotification(null);
-  };
-
-  const updateMargins = (newMargins: PdfMargins) => {
-    setSettings(prev => ({ ...prev, pdfMargins: newMargins }));
-  };
-
-  const updateData = (updatedData: InvoiceData) => {
-    setData(updatedData);
-  };
-
-  const toggleSettings = () => {
-    setState(state === AppState.SETTINGS ? AppState.UPLOAD : AppState.SETTINGS);
-  };
-
-  const toggleHistory = () => {
-    setState(state === AppState.HISTORY ? AppState.UPLOAD : AppState.HISTORY);
-  };
-
-  const deleteHistoryItem = (id: string) => {
-    if(confirm('Deseja realmente excluir este histórico?')) {
-      setHistory(prev => prev.filter(item => item.id !== id));
-      showNotification('INFO', 'Histórico atualizado.');
-    }
-  };
-
-  const viewHistoryItem = (item: HistoryItem) => {
-    setData(item.data);
-    setState(AppState.PREVIEW);
-  };
-
-  if (!user) {
-    return <LoginScreen onLogin={handleLogin} onUpdatePassword={handleUpdatePassword} users={users} />;
-  }
+  if (!user) return <LoginScreen onLogin={handleLogin} onUpdatePassword={handleUpdatePassword} users={users} />;
 
   return (
     <div className="min-h-screen flex flex-col bg-[#f8fafc]">
       {notification && (
-        <div className="fixed top-6 left-1/2 -translate-x-1/2 z-[100] animate-pop-in no-print px-4 w-full max-w-sm">
+        <div className="fixed top-6 left-1/2 -translate-x-1/2 z-[100] animate-pop-in px-4 w-full max-w-sm">
           <div className={`flex items-center gap-3 p-4 rounded-2xl shadow-2xl border ${
             notification.type === 'SUCCESS' ? 'bg-emerald-600 text-white border-emerald-500' :
             notification.type === 'ERROR' ? 'bg-rose-600 text-white border-rose-500' :
             notification.type === 'LOADING' ? 'bg-gray-900 text-white border-gray-800' :
             'bg-indigo-600 text-white border-indigo-500'
           }`}>
-            <div className="shrink-0">
-              {notification.type === 'SUCCESS' && <CheckCircle2 className="w-5 h-5" />}
-              {notification.type === 'ERROR' && <XCircle className="w-5 h-5" />}
-              {notification.type === 'LOADING' && <Loader2 className="w-5 h-5 animate-spin" />}
-              {notification.type === 'INFO' && <Info className="w-5 h-5" />}
-            </div>
-            <p className="text-xs font-black uppercase tracking-widest leading-tight">{notification.message}</p>
-            {notification.type !== 'LOADING' && (
-              <button onClick={() => setNotification(null)} className="ml-auto opacity-50 hover:opacity-100 transition-opacity">
-                <XCircle className="w-4 h-4" />
-              </button>
-            )}
+            {notification.type === 'LOADING' ? <Loader2 className="w-5 h-5 animate-spin" /> : <Info className="w-5 h-5" />}
+            <p className="text-xs font-black uppercase tracking-widest">{notification.message}</p>
           </div>
         </div>
       )}
 
-      <div className="hidden-print-sources" style={{ position: 'absolute', left: '-9999px', top: 0, opacity: 0, pointerEvents: 'none' }}>
-        <div className="invoice-hidden-source">
-          {data && <ModernInvoice data={data} settings={settings} isPrinting={true} />}
-        </div>
-        <div className="receipt-hidden-source">
-          {data && <ReceiptPreview data={data} settings={settings} isPrinting={true} />}
-        </div>
+      <div className="hidden-print-sources" style={{ position: 'fixed', left: '-9999px', top: 0, opacity: 0 }}>
+        <div className="invoice-hidden-source">{data && <ModernInvoice data={data} settings={settings} isPrinting={true} />}</div>
+        <div className="receipt-hidden-source">{data && <ReceiptPreview data={data} settings={settings} isPrinting={true} />}</div>
       </div>
 
-      <nav className="bg-white/90 border-b border-gray-100 py-3 sm:py-4 px-4 sm:px-8 flex justify-between items-center no-print sticky top-0 z-50 shadow-sm backdrop-blur-xl">
-        <div className="group flex items-center gap-2 sm:gap-3 cursor-pointer select-none transition-all duration-300 active:scale-95" onClick={handleReset}>
-          <div className="bg-indigo-600 text-white font-black rounded-xl sm:rounded-2xl p-2 sm:p-2.5 text-base sm:text-xl shadow-xl shadow-indigo-100 transition-all">NF</div>
-          <div className="transition-transform duration-300">
-            <span className="font-black text-gray-900 text-sm sm:text-xl block leading-tight tracking-tighter">
-              <span className="hidden xs:inline">MEI-</span>SmartDoc
-            </span>
-          </div>
+      <nav className="bg-white border-b border-gray-100 py-4 px-8 flex justify-between items-center no-print sticky top-0 z-50">
+        <div className="flex items-center gap-3 cursor-pointer" onClick={handleReset}>
+          <div className="bg-indigo-600 text-white font-black rounded-xl p-2.5 text-xl">NF</div>
+          <span className="font-black text-gray-900 text-xl tracking-tighter">MeiGerador-NFS-e</span>
         </div>
-
-        <div className="flex items-center gap-1.5 sm:gap-6">
-          <button onClick={toggleHistory} className={`flex items-center gap-2 px-3 sm:px-5 py-2.5 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all ${state === AppState.HISTORY ? 'bg-indigo-600 text-white shadow-xl' : 'text-gray-400 hover:text-indigo-600 hover:bg-indigo-50'}`}>
-            <Files className="w-4 h-4" />
-            <span className="hidden md:inline">Arquivo</span>
-          </button>
-
-          <div className="flex items-center gap-1 sm:gap-2">
-            <button onClick={toggleSettings} className={`p-2.5 sm:p-3 rounded-xl sm:rounded-2xl transition-all ${state === AppState.SETTINGS ? 'bg-indigo-600 text-white shadow-xl' : 'text-gray-400 hover:text-indigo-600 hover:bg-indigo-50'}`}>
-              <SettingsIcon className="w-4 h-4 sm:w-5 sm:h-5" />
-            </button>
-
-            {state === AppState.PREVIEW && (
-              <div className="flex gap-1.5 sm:gap-2">
-                <button onClick={() => shareFullPdf()} disabled={isDownloading} className="bg-indigo-50 border border-indigo-100 text-indigo-600 p-2.5 sm:px-5 sm:py-3 rounded-xl sm:rounded-2xl flex items-center gap-2 transition-all active:scale-95 shadow-sm disabled:opacity-50">
-                  <Share2 className="w-4 h-4" />
-                  <span className="hidden xl:inline text-xs font-black uppercase tracking-widest">Share</span>
-                </button>
-                <button onClick={() => downloadPDF('BOTH')} disabled={isDownloading} className="bg-emerald-600 text-white p-2.5 sm:px-5 sm:py-3 rounded-xl sm:rounded-2xl flex items-center gap-2 transition-all active:scale-95 shadow-xl disabled:opacity-50">
-                  {isDownloading ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileStack className="w-4 h-4" />}
-                  <span className="hidden lg:inline text-xs font-black uppercase tracking-widest">Download</span>
-                </button>
-              </div>
-            )}
-
-            <button onClick={handleLogout} className="text-gray-300 hover:text-red-600 p-2.5 sm:p-3 rounded-xl sm:rounded-2xl hover:bg-red-50 transition-all">
-              <LogOut className="w-4 h-4 sm:w-5 sm:h-5" />
-            </button>
-          </div>
+        <div className="flex items-center gap-4">
+          <button onClick={() => setState(AppState.HISTORY)} className="text-gray-400 hover:text-indigo-600 p-2"><Files className="w-5 h-5" /></button>
+          <button onClick={() => setState(AppState.SETTINGS)} className="text-gray-400 hover:text-indigo-600 p-2"><SettingsIcon className="w-5 h-5" /></button>
+          <button onClick={handleLogout} className="text-gray-300 hover:text-red-600 p-2"><LogOut className="w-5 h-5" /></button>
         </div>
       </nav>
 
-      <main className="flex-grow flex flex-col items-center justify-start p-4 sm:p-10 no-print relative overflow-x-hidden">
-        {state !== AppState.UPLOAD && state !== AppState.PROCESSING && (
-          <div className="w-full max-w-6xl mb-6 flex justify-start animate-fade-in no-print">
-            <button 
-              onClick={handleReset}
-              className="flex items-center gap-2 px-6 py-3 bg-white border border-gray-100 rounded-2xl text-[10px] font-black uppercase tracking-widest text-gray-500 hover:text-indigo-600 hover:bg-indigo-50 transition-all shadow-sm active:scale-95"
-            >
-              <ArrowLeft className="w-4 h-4" /> Voltar para o Início
-            </button>
-          </div>
-        )}
-
+      <main className="flex-grow p-4 sm:p-10 flex flex-col items-center">
         {state === AppState.UPLOAD && (
-          <div className="mt-8 sm:mt-16 w-full flex flex-col items-center animate-fade-in max-w-5xl">
-            <div className="text-center mb-10 sm:mb-16">
-              <h1 className="text-3xl sm:text-5xl md:text-6xl font-black text-gray-900 mb-4 sm:mb-6 tracking-tighter px-4">Olá, <span className="text-indigo-600 uppercase">{user.name}</span></h1>
-              <p className="text-gray-400 font-bold max-w-xl mx-auto mb-0 text-sm sm:text-xl leading-relaxed px-6">Emita seus recibos e organize sua contabilidade em segundos.</p>
+          <div className="w-full max-w-5xl mt-10">
+            <div className="text-center mb-16">
+              <h1 className="text-5xl font-black text-gray-900 mb-4 tracking-tighter">Olá, <span className="text-indigo-600 uppercase">{user.name}</span></h1>
+              <p className="text-gray-400 font-bold text-xl">Arraste sua nota fiscal para começar.</p>
             </div>
-            
-            <div className="w-full grid grid-cols-1 lg:grid-cols-12 gap-10 items-start">
-              <div className="lg:col-span-7">
-                <FileUpload onFileSelect={handleFileSelect} isProcessing={false} />
-              </div>
-              
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
+              <div className="lg:col-span-7"><FileUpload onFileSelect={handleFileSelect} isProcessing={false} /></div>
               <div className="lg:col-span-5 flex flex-col gap-6">
-                <div className="bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-xl shadow-indigo-100/20">
-                  <div className="flex items-center gap-3 mb-6">
-                    <div className="bg-indigo-600 p-3 rounded-2xl text-white">
-                      <LayoutGrid className="w-6 h-6" />
+                 <div className="bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-xl">
+                    <div className="flex items-center gap-3 mb-6">
+                      <div className="bg-indigo-600 p-3 rounded-2xl text-white"><LayoutGrid className="w-6 h-6" /></div>
+                      <h3 className="text-lg font-black uppercase">Menu Rápido</h3>
                     </div>
-                    <h3 className="text-lg font-black text-gray-900 uppercase tracking-tight">Menu de Documentos</h3>
-                  </div>
-                  
-                  <div className="space-y-4">
-                    <button 
-                      onClick={toggleHistory}
-                      className="w-full group flex items-center justify-between p-5 bg-indigo-50/50 hover:bg-indigo-600 rounded-2xl border border-indigo-100 transition-all duration-300"
-                    >
-                      <div className="flex items-center gap-4">
-                        <div className="bg-white p-3 rounded-xl shadow-sm text-indigo-600 group-hover:bg-indigo-500 group-hover:text-white transition-colors">
-                          <Files className="w-5 h-5" />
-                        </div>
-                        <div className="text-left">
-                          <p className="font-black text-gray-900 group-hover:text-white uppercase text-[10px] tracking-widest">Biblioteca Completa</p>
-                          <p className="font-bold text-gray-400 group-hover:text-indigo-100 text-[10px] leading-tight uppercase opacity-80">{history.length} notas salvas</p>
-                        </div>
-                      </div>
-                      <ChevronRight className="w-5 h-5 text-indigo-300 group-hover:text-white group-hover:translate-x-1 transition-all" />
+                    <button onClick={() => setState(AppState.HISTORY)} className="w-full flex items-center justify-between p-5 bg-indigo-50/50 rounded-2xl border border-indigo-100 hover:bg-indigo-600 hover:text-white group transition-all">
+                      <span className="font-black uppercase text-[10px] tracking-widest">Biblioteca de Notas</span>
+                      <ChevronRight className="w-5 h-5" />
                     </button>
-
-                    {history.length > 0 && (
-                      <div className="pt-4 border-t border-gray-100">
-                        <p className="text-[9px] font-black text-gray-300 uppercase tracking-widest mb-4">Notas Recentes</p>
-                        <div className="space-y-3">
-                          {history.slice(0, 3).map((item) => (
-                            <div 
-                              key={item.id}
-                              onClick={() => viewHistoryItem(item)}
-                              className="flex items-center justify-between p-3 rounded-xl hover:bg-gray-50 cursor-pointer border border-transparent hover:border-gray-100 transition-all"
-                            >
-                              <div className="flex items-center gap-3">
-                                <div className="bg-emerald-50 text-emerald-600 p-2 rounded-lg font-black text-[9px] uppercase">
-                                  {item.data.number?.slice(-2) || 'NF'}
-                                </div>
-                                <div className="text-left overflow-hidden">
-                                  <p className="font-black text-gray-900 uppercase text-[10px] truncate max-w-[150px]">{item.data.borrower.name}</p>
-                                  <p className="font-bold text-gray-400 text-[9px] uppercase">{formatCurrency(item.data.values.netValue)}</p>
-                                </div>
-                              </div>
-                              <ArrowLeft className="w-4 h-4 text-gray-300 rotate-180" />
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                <div className="bg-gray-900 p-8 rounded-[2.5rem] text-white shadow-2xl relative overflow-hidden group">
-                  <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-600/20 blur-3xl rounded-full translate-x-10 -translate-y-10 group-hover:scale-150 transition-transform duration-700"></div>
-                  <div className="relative z-10">
-                    <div className="bg-white/10 p-3 rounded-2xl w-fit mb-4">
-                      <SettingsIcon className="w-6 h-6 text-indigo-400" />
-                    </div>
-                    <h3 className="text-lg font-black uppercase tracking-tight mb-2">Painel de Ajustes</h3>
-                    <p className="text-[10px] font-bold text-indigo-200/60 uppercase tracking-widest leading-relaxed mb-6">Configure seu logotipo, assinatura e gerencie usuários da plataforma.</p>
-                    <button 
-                      onClick={toggleSettings}
-                      className="w-full py-4 bg-white text-gray-900 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-indigo-400 hover:text-white transition-all active:scale-95"
-                    >
-                      Abrir Painel
-                    </button>
-                  </div>
-                </div>
+                 </div>
               </div>
             </div>
           </div>
         )}
 
-        {state === AppState.HISTORY && <DocumentLibrary items={history} settings={settings} onView={viewHistoryItem} onDelete={deleteHistoryItem} onClose={handleReset} />}
-        {state === AppState.SETTINGS && (
-          <SettingsScreen 
-            users={users} 
-            setUsers={setUsers} 
-            settings={settings} 
-            setSettings={setSettings} 
-            onClose={handleReset} 
-            history={history}
-            setHistory={setHistory}
-          />
-        )}
         {state === AppState.PROCESSING && <FileUpload onFileSelect={handleFileSelect} isProcessing={true} />}
-        {state === AppState.ERROR && (
-          <div className="mt-20 w-full max-w-md animate-pop-in bg-white p-10 rounded-[2.5rem] border border-red-100 shadow-2xl text-center">
-            <div className="bg-red-50 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6"><AlertTriangle className="w-10 h-10 text-red-500" /></div>
-            <h2 className="text-2xl font-black text-gray-900 uppercase mb-4">Problema Encontrado</h2>
-            <p className="text-gray-500 font-bold text-sm mb-8 leading-relaxed px-4">{errorMsg}</p>
-            <button onClick={handleReset} className="w-full bg-gray-900 text-white py-4 rounded-2xl font-black uppercase text-xs tracking-widest shadow-xl active:scale-95">Tentar Novamente</button>
-          </div>
-        )}
-
+        
         {state === AppState.PREVIEW && data && (
-          <div className="w-full max-w-6xl animate-fade-in mt-2 flex flex-col items-center gap-0">
-            <div className="flex p-1 bg-white/80 border border-gray-100 rounded-2xl sm:rounded-[2rem] shadow-xl z-40 backdrop-blur-md mb-[-1.5rem] relative translate-y-[-0.5rem]">
-               <button 
-                 onClick={() => setActiveTab('INVOICE')} 
-                 className={`px-6 sm:px-10 py-3 sm:py-4 rounded-xl sm:rounded-[1.5rem] text-[9px] sm:text-xs font-black uppercase tracking-widest flex items-center gap-2 transition-all ${activeTab === 'INVOICE' ? 'bg-indigo-600 text-white shadow-lg' : 'text-gray-400 hover:text-indigo-600'}`}
-               >
-                 <FileCheck className="w-4 h-4" /> <span className="hidden xs:inline">Nota Fiscal</span><span className="xs:hidden">Nota</span>
-               </button>
-               <button 
-                 onClick={() => setActiveTab('RECEIPT')} 
-                 className={`px-6 sm:px-10 py-3 sm:py-4 rounded-xl sm:rounded-[1.5rem] text-[9px] sm:text-xs font-black uppercase tracking-widest flex items-center gap-2 transition-all ${activeTab === 'RECEIPT' ? 'bg-indigo-600 text-white shadow-lg' : 'text-gray-400 hover:text-indigo-600'}`}
-               >
-                 <FileSignature className="w-4 h-4" /> <span className="hidden xs:inline">Recibo Formal</span><span className="xs:hidden">Recibo</span>
-               </button>
+          <div className="w-full max-w-6xl animate-fade-in flex flex-col items-center gap-6">
+            <div className="flex gap-2 p-1 bg-white border border-gray-100 rounded-2xl shadow-xl">
+               <button onClick={() => setActiveTab('INVOICE')} className={`px-8 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest ${activeTab === 'INVOICE' ? 'bg-indigo-600 text-white' : 'text-gray-400'}`}>Nota Fiscal</button>
+               <button onClick={() => setActiveTab('RECEIPT')} className={`px-8 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest ${activeTab === 'RECEIPT' ? 'bg-indigo-600 text-white' : 'text-gray-400'}`}>Recibo</button>
             </div>
-
             {activeTab === 'INVOICE' ? (
               <ModernInvoice 
                 data={data} 
                 settings={settings} 
-                isSuccess={false} 
                 isDownloading={isDownloading} 
-                onUpdateMargins={updateMargins} 
-                onUpdateData={updateData} 
                 onDownloadInvoice={() => downloadPDF('INVOICE')} 
-                onShareFullPdf={shareFullPdf} 
+                onUpdateMargins={handleUpdateMargins}
+                onUpdateData={handleUpdateData}
               />
             ) : (
               <ReceiptPreview 
                 data={data} 
                 settings={settings} 
-                isSuccess={false} 
-                onUpdateMargins={updateMargins} 
+                isDownloading={isDownloading} 
                 onDownloadInvoice={() => downloadPDF('RECEIPT')} 
+                onUpdateMargins={handleUpdateMargins}
               />
             )}
+            <button onClick={() => downloadPDF('BOTH')} disabled={isDownloading} className="fixed bottom-10 right-10 bg-emerald-600 text-white p-6 rounded-full shadow-2xl hover:scale-110 active:scale-95 transition-all disabled:opacity-50">
+              {isDownloading ? <Loader2 className="w-8 h-8 animate-spin" /> : <FileStack className="w-8 h-8" />}
+            </button>
+          </div>
+        )}
+
+        {state === AppState.HISTORY && <DocumentLibrary items={history} onClose={handleReset} onView={(item) => { setData(item.data); setState(AppState.PREVIEW); }} onDelete={(id) => setHistory(h => h.filter(i => i.id !== id))} />}
+        {state === AppState.SETTINGS && <SettingsScreen users={users} setUsers={setUsers} settings={settings} setSettings={setSettings} onClose={handleReset} history={history} setHistory={setHistory} />}
+        
+        {state === AppState.ERROR && (
+          <div className="mt-20 text-center bg-white p-10 rounded-[2.5rem] shadow-xl border border-red-100">
+            <AlertTriangle className="w-16 h-16 text-red-500 mx-auto mb-4" />
+            <h2 className="text-2xl font-black uppercase mb-2">Erro no Processamento</h2>
+            <p className="text-gray-500 mb-8">{errorMsg}</p>
+            <button onClick={handleReset} className="bg-gray-900 text-white px-10 py-4 rounded-2xl font-black uppercase text-xs">Tentar novamente</button>
           </div>
         )}
       </main>
-
-      <footer className="py-10 text-center no-print px-6">
-        <p className="text-[10px] font-black text-gray-300 uppercase tracking-[0.3em] leading-relaxed">Powered by Gemini 3 Pro AI Engine &bull; Corporate Solutions 2025</p>
-      </footer>
     </div>
   );
 };

@@ -20,7 +20,7 @@ import {
   ArrowLeft
 } from 'lucide-react';
 import { HistoryItem, AppSettings } from '../types';
-import { formatDate, formatCurrency } from '../services/utils';
+import { formatDate, formatCurrency, formatInvoiceNumber } from '../services/utils';
 import { ReceiptPreview } from './ReceiptPreview';
 
 interface Props {
@@ -59,7 +59,7 @@ export const DocumentLibrary: React.FC<Props> = ({ items, settings, onView, onDe
 
     const headers = ['Nº Nota', 'Data Emissão', 'Prestador', 'Tomador', 'Valor Líquido'];
     const rows = filteredItems.map(item => [
-      item.data.number || '---',
+      formatInvoiceNumber(item.data.number),
       formatDate(item.data.issueDate),
       item.data.provider.name || '---',
       item.data.borrower.name || '---',
@@ -164,7 +164,7 @@ export const DocumentLibrary: React.FC<Props> = ({ items, settings, onView, onDe
                     {item.data.number?.slice(-2) || 'NF'}
                   </div>
                   <div className="overflow-hidden cursor-pointer">
-                    <p className="text-[10px] font-black text-indigo-600 uppercase tracking-widest">Nº {item.data.number}</p>
+                    <p className="text-[10px] font-black text-indigo-600 uppercase tracking-widest">Nº {formatInvoiceNumber(item.data.number)}</p>
                     <h4 className="text-base font-black text-gray-900 truncate uppercase">{item.data.provider.name}</h4>
                   </div>
                 </div>
@@ -259,7 +259,7 @@ export const DocumentLibrary: React.FC<Props> = ({ items, settings, onView, onDe
                 </div>
                 <div>
                   <h3 className="text-sm font-black text-gray-900 uppercase tracking-tight">Pré-visualização do Recibo</h3>
-                  <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">Nota Fiscal Nº {selectedPreview.data.number}</p>
+                  <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">Nota Fiscal Nº {formatInvoiceNumber(selectedPreview.data.number)}</p>
                 </div>
               </div>
               

@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { 
   User as UserIcon, 
@@ -138,7 +137,7 @@ export const LoginScreen: React.FC<Props> = ({ onLogin, onUpdatePassword, users 
                <div className="w-12 h-12 sm:w-16 sm:h-16 bg-white/20 rounded-2xl mx-auto flex items-center justify-center mb-3 sm:mb-4 backdrop-blur-md border border-white/30">
                  <Building2 className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
                </div>
-               <h1 className="text-xl sm:text-2xl font-bold text-white mb-1 tracking-tight">MEI-SmartDoc</h1>
+               <h1 className="text-xl sm:text-2xl font-bold text-white mb-1 tracking-tight">MeiGerador-NFS-e</h1>
                <p className="text-indigo-200 text-xs sm:text-sm uppercase tracking-widest font-black">Sistema de Autenticação</p>
              </div>
           </div>
@@ -257,7 +256,7 @@ export const LoginScreen: React.FC<Props> = ({ onLogin, onUpdatePassword, users 
             </form>
           </div>
         </div>
-        <p className="text-center text-gray-400 text-[10px] sm:text-xs mt-6 font-bold uppercase tracking-widest opacity-60">&copy; {new Date().getFullYear()} MEI-SmartDoc. Plataforma Segura.</p>
+        <p className="text-center text-gray-400 text-[10px] sm:text-xs mt-6 font-bold uppercase tracking-widest opacity-60">&copy; {new Date().getFullYear()} MeiGerador-NFS-e. Plataforma Segura.</p>
       </div>
 
       {/* Password Reset Modal */}
